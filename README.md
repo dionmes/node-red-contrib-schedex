@@ -12,7 +12,7 @@ want Schedex enabled and re-deploy.**
 
 # Installation
 
-This node requires node 4.x. It's tested against 4.6.1.
+This node requires node 6.x+. It's tested against 6.14.2.
 
     $ cd ~/.node-red
     $ npm install node-red-contrib-schedex
@@ -29,10 +29,13 @@ scheduling.
 The 'Suspend scheduling' checkbox allows you to disable time scheduling. If scheduling is suspended, Schedex will only
 generate output events upon receipt of input 'on' and 'off' events (see below).
 
-This setting is provided for the situation where you temporarily don't want time based activation and don't want to
-rewire your Node-RED flow.
+This setting is provided for the situation where you temporarily don't want time based activation and don't want to rewire your Node-RED flow.
+
+> Note that scheduling is suspended if you do not enter an on or off time in the node configuration.
 
 ## Times
+
+> Note that on and off times are independent. You only need to configure one or the other or both. You can leave the on or off time field blank in the node configuration and no output will be emitted.
 
 The times can be a 24 hour time or a [suncalc](https://github.com/mourner/suncalc) event:
 
@@ -53,6 +56,7 @@ The times can be a 24 hour time or a [suncalc](https://github.com/mourner/suncal
 | `nightEnd`        | night ends (morning astronomical twilight starts)                        |
 | `nauticalDawn`    | nautical dawn (morning nautical twilight starts)                         |
 | `dawn`            | dawn (morning nautical twilight ends, morning civil twilight starts)     |
+
 
 ## Offsets
 
@@ -113,19 +117,19 @@ You can set the following:
 
 Alternatively, you can send msg.payload as a string with the following values:
 
-| Example msg.payload                            | Description                                                  |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| `suspended true`                               | true will suspend scheduling, false will resume scheduling   |
-| `ontime 12:00`                                 | Time as specified in the table above for time configuration  |
-| `ontopic my_topic`                             | Sets the topic for the on event (no spaces)                  |
-| `onpayload my_payload`                         | Sets the payload for the on event (no spaces)                |
-| `onoffset 30`                                  | Sets the offset for the on event                             |
-| `onrandomoffset true`                          | Sets the random offset for the on event                      |
-| `offtime dusk`                                 | Time as specified in the table above for time configuration  |
-| `offtopic my_topic`                            | Sets the topic for the off event (no spaces)                 |
-| `offpayload my_payload`                        | Sets the payload for the off event (no spaces)               |
-| `offoffset -30`                                | Sets the offset for the off event                            |
-| `offrandomoffset false`                        | Sets the random offset for the off event                     |
-| `mon false`                                    | Disables the schedule on a Monday                            |
-| `tue true`                                     | Enables the schedule on a Tuesday                            |
-| `ontime 16:30 onoffset 60 onrandomoffset true` | Sets the time, offset and random offset for the on event     |
+| Example msg.payload                            | Description                                                 |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| `suspended true`                               | true will suspend scheduling, false will resume scheduling  |
+| `ontime 12:00`                                 | Time as specified in the table above for time configuration |
+| `ontopic my_topic`                             | Sets the topic for the on event (no spaces)                 |
+| `onpayload my_payload`                         | Sets the payload for the on event (no spaces)               |
+| `onoffset 30`                                  | Sets the offset for the on event                            |
+| `onrandomoffset true`                          | Sets the random offset for the on event                     |
+| `offtime dusk`                                 | Time as specified in the table above for time configuration |
+| `offtopic my_topic`                            | Sets the topic for the off event (no spaces)                |
+| `offpayload my_payload`                        | Sets the payload for the off event (no spaces)              |
+| `offoffset -30`                                | Sets the offset for the off event                           |
+| `offrandomoffset false`                        | Sets the random offset for the off event                    |
+| `mon false`                                    | Disables the schedule on a Monday                           |
+| `tue true`                                     | Enables the schedule on a Tuesday                           |
+| `ontime 16:30 onoffset 60 onrandomoffset true` | Sets the time, offset and random offset for the on event    |

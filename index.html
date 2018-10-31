@@ -166,6 +166,7 @@ THE SOFTWARE.
 <p>Inspired by Pete Scargill&#39;s <a href="http://tech.scargill.net/big-timer/">BigTimer</a></p>
 <p><strong>NOTE: When upgrading from versions prior to 1.0.0, you will see a message for each Schedex node in the Node-RED debug<br>window. This message is to advise that the Schedex configuration changed slightly in version 1.0.0 in order to<br>accomodate days of the week when scheduling. To remedy, simply edit each Schedex node, tick the days of the week you<br>want Schedex enabled and re-deploy.</strong></p>
 <h1 id="installation">Installation</h1>
+<p>This node requires node 6.x+. It&#39;s tested against 6.14.2.</p>
 <pre><code>$ cd ~/.node-red
 $ npm install node-red-contrib-schedex
 </code></pre><h1 id="configuration">Configuration</h1>
@@ -173,8 +174,14 @@ $ npm install node-red-contrib-schedex
 <p>The scheduling days allow you to choose which days of the week to schedule events. Unticking all days will suspend<br>scheduling.</p>
 <h2 id="suspending-scheduling">Suspending scheduling</h2>
 <p>The &#39;Suspend scheduling&#39; checkbox allows you to disable time scheduling. If scheduling is suspended, Schedex will only<br>generate output events upon receipt of input &#39;on&#39; and &#39;off&#39; events (see below).</p>
-<p>This setting is provided for the situation where you temporarily don&#39;t want time based activation and don&#39;t want to<br>rewire your Node-RED flow.</p>
+<p>This setting is provided for the situation where you temporarily don&#39;t want time based activation and don&#39;t want to rewire your Node-RED flow.</p>
+<blockquote>
+<p>Note that scheduling is suspended if you do not enter an on or off time in the node configuration.</p>
+</blockquote>
 <h2 id="times">Times</h2>
+<blockquote>
+<p>Note that on and off times are independent. You only need to configure one or the other or both. You can leave the on or off time field blank in the node configuration and no output will be emitted.</p>
+</blockquote>
 <p>The times can be a 24 hour time or a <a href="https://github.com/mourner/suncalc">suncalc</a> event:</p>
 <table>
 <thead>
