@@ -1,4 +1,4 @@
-/* eslint-disable no-invalid-this,consistent-this */
+/* eslint-disable no-invalid-this,consistent-this,max-lines-per-function */
 /**
  * The MIT License (MIT)
  *
@@ -29,15 +29,21 @@ module.exports = function(RED) {
     const _ = require('lodash');
     const fmt = 'YYYY-MM-DD HH:mm';
 
+    const Status = Object.freeze({
+        SCHEDULED: Symbol('scheduled'),
+        SUSPENDED: Symbol('suspended'),
+        FIRED: Symbol('fired'),
+        ERROR: Symbol('error')
+    });
+
     RED.nodes.registerType('schedex', function(config) {
         RED.nodes.createNode(this, config);
         const node = this,
-            events = {
-                on: setupEvent('on', 'dot'),
-                off: setupEvent('off', 'ring')
-            };
-        events.on.inverse = events.off;
-        events.off.inverse = events.on;
+            events = { on: setupEvent('on', 'dot'), off: setupEvent('off', 'ring') };
+
+        function inverse(event) {
+            return event === events.on ? events.off : events.on;
+        }
 
         // migration code : if new values are undefined, set all to true
         if (
@@ -56,7 +62,7 @@ module.exports = function(RED) {
             config.sun = config.mon = config.tue = config.wed = config.thu = config.fri = config.sat = true;
         }
 
-        const weekdays = [
+        const weekdays = Object.freeze([
             config.mon,
             config.tue,
             config.wed,
@@ -64,7 +70,7 @@ module.exports = function(RED) {
             config.fri,
             config.sat,
             config.sun
-        ];
+        ]);
 
         node.on('input', function(msg) {
             let handled = false,
@@ -90,7 +96,9 @@ module.exports = function(RED) {
                                 : events.off.moment.toDate().toUTCString(),
                             state: isSuspended()
                                 ? 'suspended'
-                                : events.off.moment.isAfter(events.on.moment) ? 'off' : 'on',
+                                : events.off.moment.isAfter(events.on.moment)
+                                    ? 'off'
+                                    : 'on',
                             ontopic: events.on.topic,
                             onpayload: events.on.payload,
                             offtopic: events.off.topic,
@@ -98,15 +106,8 @@ module.exports = function(RED) {
                         }
                     });
                 } else {
-                    if (msg.payload.indexOf('suspended') !== -1) {
-                        handled = true;
-                        const match = /.*suspended\s+(\S+)/.exec(msg.payload);
-                        const previous = config.suspended;
-                        config.suspended = toBoolean(match[1]);
-                        requiresBootstrap = requiresBootstrap || previous !== config.suspended;
-                    }
                     enumerateProgrammables(function(obj, prop, payloadName, typeConverter) {
-                        const match = new RegExp(`.*${payloadName}\\s+(\\S+)`).exec(
+                        const match = new RegExp(`.*${payloadName}\\s+(\\S+)`, 'u').exec(
                             msg.payload
                         );
                         if (match) {
@@ -118,12 +119,6 @@ module.exports = function(RED) {
                     });
                 }
             } else {
-                if (msg.payload.hasOwnProperty('suspended')) {
-                    handled = true;
-                    const previous = config.suspended;
-                    config.suspended = !!msg.payload.suspended;
-                    requiresBootstrap = requiresBootstrap || previous !== config.suspended;
-                }
                 enumerateProgrammables(function(obj, prop, payloadName, typeConverter) {
                     if (msg.payload.hasOwnProperty(payloadName)) {
                         handled = true;
@@ -134,11 +129,7 @@ module.exports = function(RED) {
                 });
             }
             if (!handled) {
-                node.status({
-                    fill: 'red',
-                    shape: 'dot',
-                    text: 'Unsupported input'
-                });
+                setStatus(Status.ERROR, { error: 'Unsupported input' });
             } else if (requiresBootstrap) {
                 bootstrap();
             }
@@ -163,25 +154,16 @@ module.exports = function(RED) {
         }
 
         function send(event, manual) {
-            node.send({
-                topic: event.topic,
-                payload: event.payload
-            });
-            node.status({
-                fill: manual ? 'blue' : 'green',
-                shape: event.shape,
-                text:
-                    event.name +
-                    (manual ? ' manual' : ' auto') +
-                    (isSuspended()
-                        ? ' - scheduling suspended'
-                        : ` until ${event.inverse.moment.format(fmt)}`)
-            });
+            node.send({ topic: event.topic, payload: event.payload });
+            setStatus(Status.FIRED, { event, manual });
         }
 
         function schedule(event, isInitial) {
+            if (!event.time) {
+                return true;
+            }
             const now = node.now();
-            const matches = new RegExp(/(\d+):(\d+)/).exec(event.time);
+            const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
             if (matches && matches.length) {
                 // Don't use existing 'now' moment here as hour and minute mutate the moment.
                 event.moment = node
@@ -196,11 +178,7 @@ module.exports = function(RED) {
                 }
             }
             if (!event.moment) {
-                node.status({
-                    fill: 'red',
-                    shape: 'dot',
-                    text: `Invalid time: ${event.time}`
-                });
+                setStatus(Status.ERROR, { error: `Invalid time [${event.time}]` });
                 return false;
             }
             event.moment.seconds(0);
@@ -235,29 +213,61 @@ module.exports = function(RED) {
             events.on.moment = null;
             clearTimeout(events.off.timeout);
             events.off.moment = null;
-            node.status({
-                fill: 'grey',
-                shape: 'dot',
-                text: `Scheduling suspended ${
-                    weekdays.indexOf(true) === -1 ? '(no weekdays selected) ' : ''
-                } - manual mode only`
-            });
+            setStatus(Status.SUSPENDED);
         }
 
         function resume() {
             if (schedule(events.on, true) && schedule(events.off, true)) {
-                const firstEvent = events.on.moment.isBefore(events.off.moment)
-                    ? events.on
-                    : events.off;
-                const message = `${firstEvent.name} ${firstEvent.moment.format(fmt)}, ${
-                    firstEvent.inverse.name
-                } ${firstEvent.inverse.moment.format(fmt)}`;
-                node.status({
-                    fill: 'yellow',
-                    shape: 'dot',
-                    text: message
-                });
+                setStatus(Status.SCHEDULED);
             }
+        }
+
+        function setStatus(status, { event = null, manual = false, error = null } = {}) {
+            const message = [];
+            let shape = 'dot',
+                fill = 'red';
+            if (status === Status.SCHEDULED) {
+                fill = 'yellow';
+                if (events.on.moment && events.off.moment) {
+                    const firstEvent = events.on.moment.isBefore(events.off.moment)
+                        ? events.on
+                        : events.off;
+                    message.push(firstEvent.name);
+                    message.push(firstEvent.moment.format(fmt));
+                    message.push(inverse(firstEvent).name);
+                    message.push(inverse(firstEvent).moment.format(fmt));
+                } else if (events.on.moment) {
+                    message.push(events.on.name);
+                    message.push(events.on.moment.format(fmt));
+                } else if (events.off.moment) {
+                    message.push(events.off.name);
+                    message.push(events.off.moment.format(fmt));
+                }
+            } else if (status === Status.FIRED) {
+                // eslint-disable-next-line prefer-destructuring
+                shape = event.shape;
+                fill = manual ? 'blue' : 'green';
+                message.push(event.name);
+                message.push(manual ? 'manual' : 'auto');
+                if (isSuspended()) {
+                    message.push('- scheduling suspended');
+                } else {
+                    message.push(`until ${inverse(event).moment.format(fmt)}`);
+                }
+            } else if (status === Status.SUSPENDED) {
+                fill = 'grey';
+                message.push('Scheduling suspended');
+                if (weekdays.indexOf(true) === -1) {
+                    message.push('(no weekdays selected)');
+                } else if (!events.on.time && !events.off.time) {
+                    message.push('(no on or off time)');
+                }
+                message.push('- manual mode only');
+            } else if (status === Status.ERROR) {
+                message.push(error);
+            }
+
+            node.status({ fill, shape, text: message.join(' ') });
         }
 
         function bootstrap() {
@@ -269,7 +279,11 @@ module.exports = function(RED) {
         }
 
         function isSuspended() {
-            return config.suspended || weekdays.indexOf(true) === -1;
+            return (
+                config.suspended ||
+                weekdays.indexOf(true) === -1 ||
+                (!events.on.time && !events.off.time)
+            );
         }
 
         function enumerateProgrammables(callback) {
@@ -292,6 +306,7 @@ module.exports = function(RED) {
             callback(config, 'sun', 'sun', toBoolean);
             callback(config, 'lon', 'lon', Number);
             callback(config, 'lat', 'lat', Number);
+            callback(config, 'suspended', 'suspended', toBoolean);
         }
 
         function toBoolean(val) {
