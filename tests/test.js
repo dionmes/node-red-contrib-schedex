@@ -32,6 +32,15 @@ const mock = require('node-red-contrib-mock-node');
 const nodeRedModule = require('../index.js');
 
 describe('schedex', function() {
+    it('should toggle state', function() {
+        const node = newNode();
+        node.emit('input', { payload: 'toggle' });
+        console.log(node.status().text);
+        assert(node.status().text.indexOf('ON manual until') === 0);
+
+        node.emit('input', { payload: 'toggle' });
+        assert(node.status().text.indexOf('OFF manual until') === 0);
+    });
     it('should visually indicate manual on off', function() {
         let node = newNode();
         node.emit('input', { payload: 'on' });
