@@ -280,6 +280,10 @@ $ npm install node-red-contrib-schedex
 <td>Triggers manual off mode and causes Schedex to emit the configured off event. Manual mode is reset when the next on or off time is reached</td>
 </tr>
 <tr>
+<td><code>toggle</code></td>
+<td>Triggers either the manual on or manual off output. If the last event was the on event, toggle will cause schedex to emit the off event and vice versa. State is not maintained over restarts and deploys. Schedex assumes off upon start so the first toggle emit the on event.</td>
+</tr>
+<tr>
 <td><code>info</code></td>
 <td>Schedex emits an object containing the on and off times in UTC format. It also contains the state which is either on or off.</td>
 </tr>

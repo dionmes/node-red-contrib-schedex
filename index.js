@@ -72,6 +72,9 @@ module.exports = function(RED) {
             config.sun
         ]);
 
+        // Assume the node is off initially
+        let lastEvent = events.off;
+
         node.on('input', function(msg) {
             let handled = false,
                 requiresBootstrap = false;
@@ -83,6 +86,9 @@ module.exports = function(RED) {
                 } else if (msg.payload === 'off') {
                     handled = true;
                     send(events.off, true);
+                } else if (msg.payload === 'toggle') {
+                    handled = true;
+                    send(inverse(lastEvent), true);
                 } else if (msg.payload === 'info') {
                     handled = true;
                     node.send({
@@ -154,6 +160,7 @@ module.exports = function(RED) {
         }
 
         function send(event, manual) {
+            lastEvent = event;
             node.send({ topic: event.topic, payload: event.payload });
             setStatus(Status.FIRED, { event, manual });
         }
