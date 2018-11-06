@@ -258,10 +258,15 @@ module.exports = function(RED) {
                 message.push(manual ? 'manual' : 'auto');
                 if (isSuspended()) {
                     message.push('- scheduling suspended');
-                } else {
+                } else if (inverse(event).moment) {
                     message.push(
                         `until ${inverse(event).name} at ${inverse(event).moment.format(fmt)}`
                     );
+                } else {
+                    const next = inverse(event).moment ? inverse(event) : event;
+                    if (next.moment) {
+                        message.push(`until ${next.name} at ${next.moment.format(fmt)}`);
+                    }
                 }
             } else if (status === Status.SUSPENDED) {
                 fill = 'grey';

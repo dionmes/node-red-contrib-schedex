@@ -35,11 +35,25 @@ describe('schedex', function() {
     it('should toggle state', function() {
         const node = newNode();
         node.emit('input', { payload: 'toggle' });
-        console.log(node.status().text);
-        assert(node.status().text.indexOf('ON manual until OFF at') === 0);
+        assert(node.status().text.indexOf('ON manual until OFF at ') === 0);
 
         node.emit('input', { payload: 'toggle' });
         assert(node.status().text.indexOf('OFF manual until ON at ') === 0);
+    });
+    it('should indicate correct next event when on or off is not configured', function() {
+        const noOnTime = newNode({ ontime: null });
+        noOnTime.emit('input', { payload: 'toggle' });
+        assert(noOnTime.status().text.indexOf('ON manual until OFF at') === 0);
+
+        noOnTime.emit('input', { payload: 'toggle' });
+        assert(noOnTime.status().text.indexOf('OFF manual until OFF at ') === 0);
+
+        const noOnOffTime = newNode({ ontime: null, offtime: null });
+        noOnOffTime.emit('input', { payload: 'toggle' });
+        assert.equal(noOnOffTime.status().text, 'ON manual - scheduling suspended');
+
+        noOnOffTime.emit('input', { payload: 'toggle' });
+        assert.equal(noOnOffTime.status().text, 'OFF manual - scheduling suspended');
     });
     it('should visually indicate manual on off', function() {
         let node = newNode();
