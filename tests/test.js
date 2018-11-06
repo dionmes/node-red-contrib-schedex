@@ -36,10 +36,10 @@ describe('schedex', function() {
         const node = newNode();
         node.emit('input', { payload: 'toggle' });
         console.log(node.status().text);
-        assert(node.status().text.indexOf('ON manual until') === 0);
+        assert(node.status().text.indexOf('ON manual until OFF at') === 0);
 
         node.emit('input', { payload: 'toggle' });
-        assert(node.status().text.indexOf('OFF manual until') === 0);
+        assert(node.status().text.indexOf('OFF manual until ON at ') === 0);
     });
     it('should visually indicate manual on off', function() {
         let node = newNode();

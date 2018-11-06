@@ -259,7 +259,9 @@ module.exports = function(RED) {
                 if (isSuspended()) {
                     message.push('- scheduling suspended');
                 } else {
-                    message.push(`until ${inverse(event).moment.format(fmt)}`);
+                    message.push(
+                        `until ${inverse(event).name} at ${inverse(event).moment.format(fmt)}`
+                    );
                 }
             } else if (status === Status.SUSPENDED) {
                 fill = 'grey';
