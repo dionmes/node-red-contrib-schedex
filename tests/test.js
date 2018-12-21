@@ -226,6 +226,32 @@ describe('schedex', function() {
             now.add(1, 'day').isoWeekday()
         );
     });
+    it('should handle programmatic day configuration', function() {
+        const now = moment();
+        // Start by disabling today in the configuration.
+        const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        /*
+         * Make sure we schedule 'on' for today by making the time after now. That way, disabling
+         * today in the config will force the 'on' to be tomorrow and we can assert it.
+         */
+        const config = {
+            ontime: moment()
+                .add(1, 'minute')
+                .format('HH:mm')
+        };
+        const node = newNode(config);
+        assert.strictEqual(node.schedexEvents().on.moment.isoWeekday(), now.isoWeekday());
+
+        const today = weekdays[now.isoWeekday() - 1];
+        node.emit('input', {
+            payload: `${today} false`
+        });
+
+        assert.strictEqual(
+            node.schedexEvents().on.moment.isoWeekday(),
+            now.add(1, 'day').isoWeekday()
+        );
+    });
     it('should emit the correct info', function() {
         let ontime = moment()
             .seconds(0)
