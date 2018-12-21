@@ -1,4 +1,4 @@
-/* eslint-disable no-invalid-this,consistent-this,max-lines-per-function */
+/* eslint-disable max-lines,no-invalid-this,consistent-this,max-lines-per-function */
 /**
  * The MIT License (MIT)
  *
@@ -61,16 +61,6 @@ module.exports = function(RED) {
             );
             config.sun = config.mon = config.tue = config.wed = config.thu = config.fri = config.sat = true;
         }
-
-        const weekdays = Object.freeze([
-            config.mon,
-            config.tue,
-            config.wed,
-            config.thu,
-            config.fri,
-            config.sat,
-            config.sun
-        ]);
 
         // Assume the node is off initially
         let lastEvent = events.off;
@@ -203,6 +193,7 @@ module.exports = function(RED) {
             }
 
             // Adjust weekday if not selected
+            const weekdays = getWeekdayConfig();
             while (!weekdays[event.moment.isoWeekday() - 1]) {
                 event.moment.add(1, 'day');
             }
@@ -271,7 +262,7 @@ module.exports = function(RED) {
             } else if (status === Status.SUSPENDED) {
                 fill = 'grey';
                 message.push('Scheduling suspended');
-                if (weekdays.indexOf(true) === -1) {
+                if (getWeekdayConfig().indexOf(true) === -1) {
                     message.push('(no weekdays selected)');
                 } else if (!events.on.time && !events.off.time) {
                     message.push('(no on or off time)');
@@ -295,7 +286,7 @@ module.exports = function(RED) {
         function isSuspended() {
             return (
                 config.suspended ||
-                weekdays.indexOf(true) === -1 ||
+                getWeekdayConfig().indexOf(true) === -1 ||
                 (!events.on.time && !events.off.time)
             );
         }
@@ -326,6 +317,18 @@ module.exports = function(RED) {
         function toBoolean(val) {
             // eslint-disable-next-line prefer-template
             return (val + '').toLowerCase() === 'true';
+        }
+
+        function getWeekdayConfig() {
+            return [
+                config.mon,
+                config.tue,
+                config.wed,
+                config.thu,
+                config.fri,
+                config.sat,
+                config.sun
+            ];
         }
 
         // Bodges to allow testing
