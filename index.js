@@ -93,6 +93,11 @@ module.exports = function(RED) {
                         : events.off.moment.isAfter(events.on.moment)
                             ? 'off'
                             : 'on';
+                    // We have to reassign these properties over those in config as
+                    // when we bootstrap we parse these properties out into events.on
+                    // and events.off for convenience. When we accept programmatic input,
+                    // we only only assign to events.on and events.off. Perhaps we should
+                    // assign to config and call setupEvent when we bootstrap?
                     payload.ontopic = events.on.topic;
                     payload.onpayload = events.on.payload;
                     payload.offtopic = events.off.topic;
