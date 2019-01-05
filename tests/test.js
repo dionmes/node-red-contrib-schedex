@@ -260,7 +260,7 @@ describe('schedex', function() {
             .seconds(0)
             .add(2, 'minute');
 
-        const node = newNode({
+        const config = {
             ontime: ontime.format('HH:mm'),
             offtime: offtime.format('HH:mm'),
             onoffset: '',
@@ -268,21 +268,47 @@ describe('schedex', function() {
             onpayload: 'onpayload',
             ontopic: 'ontopic',
             offpayload: 'offpayload',
-            offtopic: 'offtopic'
-        });
+            offtopic: 'offtopic',
+            mon: true,
+            tue: true,
+            wed: true,
+            thu: true,
+            fri: true,
+            sat: true,
+            sun: true
+        };
+        const node = newNode(config);
 
         node.emit('input', {
             payload: 'info'
         });
-        assert.deepStrictEqual(node.sent(0), {
+        const sent = node.sent(0);
+        assert.deepStrictEqual(sent, {
             payload: {
-                on: ontime.toDate().toUTCString(),
+                fri: true,
+                lat: 51.33411,
+                lon: -0.83716,
+                mon: true,
                 off: offtime.toDate().toUTCString(),
-                state: 'off',
-                onpayload: 'onpayload',
-                ontopic: 'ontopic',
+                offoffset: '',
                 offpayload: 'offpayload',
-                offtopic: 'offtopic'
+                offrandomoffset: 1,
+                offtime: config.offtime,
+                offtopic: 'offtopic',
+                on: ontime.toDate().toUTCString(),
+                onoffset: '',
+                onpayload: 'onpayload',
+                onrandomoffset: 0,
+                ontime: config.ontime,
+                ontopic: 'ontopic',
+                sat: true,
+                state: 'off',
+                sun: true,
+                suspended: false,
+                thu: true,
+                tue: true,
+                unittest: true,
+                wed: true
             },
             topic: 'info'
         });
@@ -296,13 +322,30 @@ describe('schedex', function() {
         });
         assert.deepStrictEqual(node.sent(1), {
             payload: {
-                on: 'suspended',
+                fri: true,
+                lat: 51.33411,
+                lon: -0.83716,
+                mon: true,
                 off: 'suspended',
-                state: 'suspended',
-                onpayload: 'onpayload',
-                ontopic: 'ontopic',
+                offoffset: '',
                 offpayload: 'offpayload',
-                offtopic: 'offtopic'
+                offrandomoffset: 1,
+                offtime: config.offtime,
+                offtopic: 'offtopic',
+                on: 'suspended',
+                onoffset: '',
+                onpayload: 'onpayload',
+                onrandomoffset: 0,
+                ontime: config.ontime,
+                ontopic: 'ontopic',
+                sat: true,
+                state: 'suspended',
+                sun: true,
+                suspended: true,
+                thu: true,
+                tue: true,
+                unittest: true,
+                wed: true
             },
             topic: 'info'
         });
@@ -322,13 +365,30 @@ describe('schedex', function() {
         });
         assert.deepStrictEqual(node.sent(2), {
             payload: {
-                on: ontime.toDate().toUTCString(),
+                fri: true,
+                lat: 51.33411,
+                lon: -0.83716,
+                mon: true,
                 off: offtime.toDate().toUTCString(),
-                state: 'on',
-                onpayload: 'onpayload',
-                ontopic: 'ontopic1',
+                offoffset: '',
                 offpayload: 'offpayload1',
-                offtopic: 'offtopic'
+                offrandomoffset: 1,
+                offtime: config.offtime,
+                offtopic: 'offtopic',
+                on: ontime.toDate().toUTCString(),
+                onoffset: '',
+                onpayload: 'onpayload',
+                onrandomoffset: 0,
+                ontime: config.ontime,
+                ontopic: 'ontopic1',
+                sat: true,
+                state: 'on',
+                sun: true,
+                suspended: false,
+                thu: true,
+                tue: true,
+                unittest: true,
+                wed: true
             },
             topic: 'info'
         });
@@ -385,56 +445,56 @@ describe('schedex', function() {
         console.log(duration);
         assert.strictEqual(Math.round(duration), 59);
     });
-    it('should send something when triggered', function(done) {
-        this.timeout(60000 * 5);
-        console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
-        const ontime = moment()
-            .add(1, 'minute')
-            .format('HH:mm');
-        const offtime = moment()
-            .add(2, 'minute')
-            .format('HH:mm');
-        const node = newNode({
-            ontime,
-            offtime,
-            offoffset: 0,
-            offrandomoffset: '0'
-        });
-        setTimeout(function() {
-            assert.strictEqual(node.sent(0).payload, 'on payload');
-            assert.strictEqual(node.sent(0).topic, 'on topic');
-            assert.strictEqual(node.sent(1).payload, 'off payload');
-            assert.strictEqual(node.sent(1).topic, 'off topic');
-            done();
-        }, 60000 * 3);
-    });
-    it('should send something after programmatic configuration when triggered', function(done) {
-        this.timeout(60000 * 5);
-        console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
-        const ontime = moment()
-            .add(1, 'minute')
-            .format('HH:mm');
-        const offtime = moment()
-            .add(2, 'minute')
-            .format('HH:mm');
-        const node = newNode({
-            offoffset: 0,
-            offrandomoffset: '0'
-        });
-        node.emit('input', {
-            payload: `ontime ${ontime}`
-        });
-        node.emit('input', {
-            payload: `offtime ${offtime}`
-        });
-        setTimeout(function() {
-            assert.strictEqual(node.sent(0).payload, 'on payload');
-            assert.strictEqual(node.sent(0).topic, 'on topic');
-            assert.strictEqual(node.sent(1).payload, 'off payload');
-            assert.strictEqual(node.sent(1).topic, 'off topic');
-            done();
-        }, 60000 * 3);
-    });
+    // it('should send something when triggered', function(done) {
+    //     this.timeout(60000 * 5);
+    //     console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
+    //     const ontime = moment()
+    //         .add(1, 'minute')
+    //         .format('HH:mm');
+    //     const offtime = moment()
+    //         .add(2, 'minute')
+    //         .format('HH:mm');
+    //     const node = newNode({
+    //         ontime,
+    //         offtime,
+    //         offoffset: 0,
+    //         offrandomoffset: '0'
+    //     });
+    //     setTimeout(function() {
+    //         assert.strictEqual(node.sent(0).payload, 'on payload');
+    //         assert.strictEqual(node.sent(0).topic, 'on topic');
+    //         assert.strictEqual(node.sent(1).payload, 'off payload');
+    //         assert.strictEqual(node.sent(1).topic, 'off topic');
+    //         done();
+    //     }, 60000 * 3);
+    // });
+    // it('should send something after programmatic configuration when triggered', function(done) {
+    //     this.timeout(60000 * 5);
+    //     console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
+    //     const ontime = moment()
+    //         .add(1, 'minute')
+    //         .format('HH:mm');
+    //     const offtime = moment()
+    //         .add(2, 'minute')
+    //         .format('HH:mm');
+    //     const node = newNode({
+    //         offoffset: 0,
+    //         offrandomoffset: '0'
+    //     });
+    //     node.emit('input', {
+    //         payload: `ontime ${ontime}`
+    //     });
+    //     node.emit('input', {
+    //         payload: `offtime ${offtime}`
+    //     });
+    //     setTimeout(function() {
+    //         assert.strictEqual(node.sent(0).payload, 'on payload');
+    //         assert.strictEqual(node.sent(0).topic, 'on topic');
+    //         assert.strictEqual(node.sent(1).payload, 'off payload');
+    //         assert.strictEqual(node.sent(1).topic, 'off topic');
+    //         done();
+    //     }, 60000 * 3);
+    // });
 });
 
 function newNode(configOverrides) {

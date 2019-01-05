@@ -81,26 +81,23 @@ module.exports = function(RED) {
                     send(inverse(lastEvent), true);
                 } else if (msg.payload === 'info') {
                     handled = true;
-                    node.send({
-                        topic: 'info',
-                        payload: {
-                            on: isSuspended()
-                                ? 'suspended'
-                                : events.on.moment.toDate().toUTCString(),
-                            off: isSuspended()
-                                ? 'suspended'
-                                : events.off.moment.toDate().toUTCString(),
-                            state: isSuspended()
-                                ? 'suspended'
-                                : events.off.moment.isAfter(events.on.moment)
-                                    ? 'off'
-                                    : 'on',
-                            ontopic: events.on.topic,
-                            onpayload: events.on.payload,
-                            offtopic: events.off.topic,
-                            offpayload: events.off.payload
-                        }
-                    });
+                    const payload = _.clone(config);
+                    payload.on = isSuspended()
+                        ? 'suspended'
+                        : events.on.moment.toDate().toUTCString();
+                    payload.off = isSuspended()
+                        ? 'suspended'
+                        : events.off.moment.toDate().toUTCString();
+                    payload.state = isSuspended()
+                        ? 'suspended'
+                        : events.off.moment.isAfter(events.on.moment)
+                            ? 'off'
+                            : 'on';
+                    payload.ontopic = events.on.topic;
+                    payload.onpayload = events.on.payload;
+                    payload.offtopic = events.off.topic;
+                    payload.offpayload = events.off.payload;
+                    node.send({ topic: 'info', payload });
                 } else {
                     enumerateProgrammables(function(obj, prop, payloadName, typeConverter) {
                         const match = new RegExp(`.*${payloadName}\\s+(\\S+)`, 'u').exec(
