@@ -445,56 +445,56 @@ describe('schedex', function() {
         console.log(duration);
         assert.strictEqual(Math.round(duration), 59);
     });
-    // it('should send something when triggered', function(done) {
-    //     this.timeout(60000 * 5);
-    //     console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
-    //     const ontime = moment()
-    //         .add(1, 'minute')
-    //         .format('HH:mm');
-    //     const offtime = moment()
-    //         .add(2, 'minute')
-    //         .format('HH:mm');
-    //     const node = newNode({
-    //         ontime,
-    //         offtime,
-    //         offoffset: 0,
-    //         offrandomoffset: '0'
-    //     });
-    //     setTimeout(function() {
-    //         assert.strictEqual(node.sent(0).payload, 'on payload');
-    //         assert.strictEqual(node.sent(0).topic, 'on topic');
-    //         assert.strictEqual(node.sent(1).payload, 'off payload');
-    //         assert.strictEqual(node.sent(1).topic, 'off topic');
-    //         done();
-    //     }, 60000 * 3);
-    // });
-    // it('should send something after programmatic configuration when triggered', function(done) {
-    //     this.timeout(60000 * 5);
-    //     console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
-    //     const ontime = moment()
-    //         .add(1, 'minute')
-    //         .format('HH:mm');
-    //     const offtime = moment()
-    //         .add(2, 'minute')
-    //         .format('HH:mm');
-    //     const node = newNode({
-    //         offoffset: 0,
-    //         offrandomoffset: '0'
-    //     });
-    //     node.emit('input', {
-    //         payload: `ontime ${ontime}`
-    //     });
-    //     node.emit('input', {
-    //         payload: `offtime ${offtime}`
-    //     });
-    //     setTimeout(function() {
-    //         assert.strictEqual(node.sent(0).payload, 'on payload');
-    //         assert.strictEqual(node.sent(0).topic, 'on topic');
-    //         assert.strictEqual(node.sent(1).payload, 'off payload');
-    //         assert.strictEqual(node.sent(1).topic, 'off topic');
-    //         done();
-    //     }, 60000 * 3);
-    // });
+    it('should send something when triggered', function(done) {
+        this.timeout(60000 * 5);
+        console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
+        const ontime = moment()
+            .add(1, 'minute')
+            .format('HH:mm');
+        const offtime = moment()
+            .add(2, 'minute')
+            .format('HH:mm');
+        const node = newNode({
+            ontime,
+            offtime,
+            offoffset: 0,
+            offrandomoffset: '0'
+        });
+        setTimeout(function() {
+            assert.strictEqual(node.sent(0).payload, 'on payload');
+            assert.strictEqual(node.sent(0).topic, 'on topic');
+            assert.strictEqual(node.sent(1).payload, 'off payload');
+            assert.strictEqual(node.sent(1).topic, 'off topic');
+            done();
+        }, 60000 * 3);
+    });
+    it('should send something after programmatic configuration when triggered', function(done) {
+        this.timeout(60000 * 5);
+        console.log(`\t[${this.test.title}] will take 3 minutes, please wait...`);
+        const ontime = moment()
+            .add(1, 'minute')
+            .format('HH:mm');
+        const offtime = moment()
+            .add(2, 'minute')
+            .format('HH:mm');
+        const node = newNode({
+            offoffset: 0,
+            offrandomoffset: '0'
+        });
+        node.emit('input', {
+            payload: `ontime ${ontime}`
+        });
+        node.emit('input', {
+            payload: `offtime ${offtime}`
+        });
+        setTimeout(function() {
+            assert.strictEqual(node.sent(0).payload, 'on payload');
+            assert.strictEqual(node.sent(0).topic, 'on topic');
+            assert.strictEqual(node.sent(1).payload, 'off payload');
+            assert.strictEqual(node.sent(1).topic, 'off topic');
+            done();
+        }, 60000 * 3);
+    });
 });
 
 function newNode(configOverrides) {
