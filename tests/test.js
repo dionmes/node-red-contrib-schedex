@@ -379,7 +379,7 @@ describe('schedex', function() {
                 onoffset: '',
                 onpayload: 'onpayload',
                 onrandomoffset: 0,
-                ontime: config.ontime,
+                ontime: ontime.format('HH:mm'),
                 ontopic: 'ontopic1',
                 sat: true,
                 state: 'on',
