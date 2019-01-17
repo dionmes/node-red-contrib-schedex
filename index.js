@@ -39,7 +39,7 @@ module.exports = function(RED) {
     RED.nodes.registerType('schedex', function(config) {
         RED.nodes.createNode(this, config);
         const node = this,
-            events = { on: setupEvent('on', 'dot'), off: setupEvent('off', 'ring') };
+            events = {};
 
         function inverse(event) {
             return event === events.on ? events.off : events.on;
@@ -81,46 +81,37 @@ module.exports = function(RED) {
                     send(inverse(lastEvent), true);
                 } else if (msg.payload === 'info') {
                     handled = true;
-                    node.send({
-                        topic: 'info',
-                        payload: {
-                            on: isSuspended()
-                                ? 'suspended'
-                                : events.on.moment.toDate().toUTCString(),
-                            off: isSuspended()
-                                ? 'suspended'
-                                : events.off.moment.toDate().toUTCString(),
-                            state: isSuspended()
-                                ? 'suspended'
-                                : events.off.moment.isAfter(events.on.moment)
-                                    ? 'off'
-                                    : 'on',
-                            ontopic: events.on.topic,
-                            onpayload: events.on.payload,
-                            offtopic: events.off.topic,
-                            offpayload: events.off.payload
-                        }
-                    });
+                    const payload = _.clone(config);
+                    payload.on = isSuspended()
+                        ? 'suspended'
+                        : events.on.moment.toDate().toUTCString();
+                    payload.off = isSuspended()
+                        ? 'suspended'
+                        : events.off.moment.toDate().toUTCString();
+                    payload.state = isSuspended()
+                        ? 'suspended'
+                        : events.off.moment.isAfter(events.on.moment)
+                            ? 'off'
+                            : 'on';
+                    node.send({ topic: 'info', payload });
                 } else {
-                    enumerateProgrammables(function(obj, prop, payloadName, typeConverter) {
-                        const match = new RegExp(`.*${payloadName}\\s+(\\S+)`, 'u').exec(
-                            msg.payload
-                        );
+                    enumerateProgrammables(function(cfg, prop, typeConverter) {
+                        const match = new RegExp(`.*${prop}\\s+(\\S+)`, 'u').exec(msg.payload);
                         if (match) {
                             handled = true;
-                            const previous = obj[prop];
-                            obj[prop] = typeConverter(match[1]);
-                            requiresBootstrap = requiresBootstrap || previous !== obj[prop];
+                            const previous = cfg[prop];
+                            cfg[prop] = typeConverter(match[1]);
+                            requiresBootstrap = requiresBootstrap || previous !== cfg[prop];
                         }
                     });
                 }
             } else {
-                enumerateProgrammables(function(obj, prop, payloadName, typeConverter) {
-                    if (msg.payload.hasOwnProperty(payloadName)) {
+                enumerateProgrammables(function(cfg, prop, typeConverter) {
+                    if (msg.payload.hasOwnProperty(prop)) {
                         handled = true;
-                        const previous = obj[prop];
-                        obj[prop] = typeConverter(msg.payload[payloadName]);
-                        requiresBootstrap = requiresBootstrap || previous !== obj[prop];
+                        const previous = cfg[prop];
+                        cfg[prop] = typeConverter(msg.payload[prop]);
+                        requiresBootstrap = requiresBootstrap || previous !== cfg[prop];
                     }
                 });
             }
@@ -156,9 +147,12 @@ module.exports = function(RED) {
         }
 
         function schedule(event, isInitial) {
+            teardownEvent(event);
+
             if (!event.time) {
                 return true;
             }
+
             const now = node.now();
             const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
             if (matches && matches.length) {
@@ -197,20 +191,23 @@ module.exports = function(RED) {
             while (!weekdays[event.moment.isoWeekday() - 1]) {
                 event.moment.add(1, 'day');
             }
-
-            if (event.timeout) {
-                clearTimeout(event.timeout);
-            }
             const delay = event.moment.diff(now);
             event.timeout = setTimeout(event.callback, delay);
             return true;
         }
 
+        function teardownEvent(event) {
+            if (event) {
+                if (event.timeout) {
+                    clearTimeout(event.timeout);
+                }
+                event.moment = null;
+            }
+        }
+
         function suspend() {
-            clearTimeout(events.on.timeout);
-            events.on.moment = null;
-            clearTimeout(events.off.timeout);
-            events.off.moment = null;
+            teardownEvent(events.on);
+            teardownEvent(events.off);
             setStatus(Status.SUSPENDED);
         }
 
@@ -276,6 +273,10 @@ module.exports = function(RED) {
         }
 
         function bootstrap() {
+            teardownEvent(events.on);
+            teardownEvent(events.off);
+            events.on = setupEvent('on', 'dot');
+            events.off = setupEvent('off', 'ring');
             if (isSuspended()) {
                 suspend();
             } else {
@@ -292,26 +293,26 @@ module.exports = function(RED) {
         }
 
         function enumerateProgrammables(callback) {
-            callback(events.on, 'time', 'ontime', String);
-            callback(events.on, 'topic', 'ontopic', String);
-            callback(events.on, 'payload', 'onpayload', String);
-            callback(events.on, 'offset', 'onoffset', Number);
-            callback(events.on, 'randomoffset', 'onrandomoffset', toBoolean);
-            callback(events.off, 'time', 'offtime', String);
-            callback(events.off, 'topic', 'offtopic', String);
-            callback(events.off, 'payload', 'offpayload', String);
-            callback(events.off, 'offset', 'offoffset', Number);
-            callback(events.off, 'randomoffset', 'offrandomoffset', toBoolean);
-            callback(config, 'mon', 'mon', toBoolean);
-            callback(config, 'tue', 'tue', toBoolean);
-            callback(config, 'wed', 'wed', toBoolean);
-            callback(config, 'thu', 'thu', toBoolean);
-            callback(config, 'fri', 'fri', toBoolean);
-            callback(config, 'sat', 'sat', toBoolean);
-            callback(config, 'sun', 'sun', toBoolean);
-            callback(config, 'lon', 'lon', Number);
-            callback(config, 'lat', 'lat', Number);
-            callback(config, 'suspended', 'suspended', toBoolean);
+            callback(config, 'ontime', String);
+            callback(config, 'ontopic', String);
+            callback(config, 'onpayload', String);
+            callback(config, 'onoffset', Number);
+            callback(config, 'onrandomoffset', toBoolean);
+            callback(config, 'offtime', String);
+            callback(config, 'offtopic', String);
+            callback(config, 'offpayload', String);
+            callback(config, 'offoffset', Number);
+            callback(config, 'offrandomoffset', toBoolean);
+            callback(config, 'mon', toBoolean);
+            callback(config, 'tue', toBoolean);
+            callback(config, 'wed', toBoolean);
+            callback(config, 'thu', toBoolean);
+            callback(config, 'fri', toBoolean);
+            callback(config, 'sat', toBoolean);
+            callback(config, 'sun', toBoolean);
+            callback(config, 'lon', Number);
+            callback(config, 'lat', Number);
+            callback(config, 'suspended', toBoolean);
         }
 
         function toBoolean(val) {
