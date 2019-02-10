@@ -23,13 +23,41 @@
  * THE SOFTWARE.
  */
 
-'use strict';
-
 const assert = require('chai').assert;
 const _ = require('lodash');
 const moment = require('moment');
 const mock = require('node-red-contrib-mock-node');
 const nodeRedModule = require('../index.js');
+
+function newNode(configOverrides) {
+    const config = {
+        suspended: false,
+        ontime: '11:45',
+        ontopic: 'on topic',
+        onpayload: 'on payload',
+        onoffset: '',
+        onrandomoffset: 0,
+        offtime: 'dawn',
+        offtopic: 'off topic',
+        offpayload: 'off payload',
+        offoffset: '5',
+        offrandomoffset: 1,
+        lat: 51.33411,
+        lon: -0.83716,
+        unittest: true,
+        mon: true,
+        tue: true,
+        wed: true,
+        thu: true,
+        fri: true,
+        sat: true,
+        sun: true
+    };
+    if (configOverrides) {
+        _.assign(config, configOverrides);
+    }
+    return mock(nodeRedModule, config);
+}
 
 describe('schedex', function() {
     it('should toggle state', function() {
@@ -496,33 +524,3 @@ describe('schedex', function() {
         }, 60000 * 3);
     });
 });
-
-function newNode(configOverrides) {
-    const config = {
-        suspended: false,
-        ontime: '11:45',
-        ontopic: 'on topic',
-        onpayload: 'on payload',
-        onoffset: '',
-        onrandomoffset: 0,
-        offtime: 'dawn',
-        offtopic: 'off topic',
-        offpayload: 'off payload',
-        offoffset: '5',
-        offrandomoffset: 1,
-        lat: 51.33411,
-        lon: -0.83716,
-        unittest: true,
-        mon: true,
-        tue: true,
-        wed: true,
-        thu: true,
-        fri: true,
-        sat: true,
-        sun: true
-    };
-    if (configOverrides) {
-        _.assign(config, configOverrides);
-    }
-    return mock(nodeRedModule, config);
-}

@@ -25,20 +25,21 @@
     },
     "dependencies": {
         "lodash": "^4.17.11",
-        "moment": "^2.22.2",
+        "moment": "^2.24.0",
         "suncalc": "^1.8.0"
     },
     "devDependencies": {
         "chai": "^4.2.0",
-        "eslint": "^5.7.0",
-        "eslint-config-biddster": "^0.6.0",
-        "eslint-config-prettier": "^3.1.0",
+        "eslint": "^5.13.0",
+        "eslint-config-airbnb-base": "^13.1.0",
+        "eslint-config-prettier": "^4.0.0",
+        "eslint-plugin-import": "^2.16.0",
         "markdown-to-html": "0.0.13",
         "mocha": "^5.2.0",
         "node-red-contrib-mock-node": "^0.4.0",
         "nsp": "^3.2.1",
         "nyc": "^13.1.0",
-        "prettier": "^1.14.3"
+        "prettier": "^1.16.3"
     },
     "node-red": {
         "nodes": {
@@ -52,8 +53,24 @@
             "mocha": true
         },
         "extends": [
-            "eslint-config-biddster/es6-node",
+            "airbnb-base",
             "prettier"
+        ],
+        "overrides": [
+            {
+                "files": [
+                    "*.js"
+                ],
+                "rules": {
+                    "func-names": "off",
+                    "max-lines-per-function": "off",
+                    "global-require": "off",
+                    "no-plusplus": "off",
+                    "no-param-reassign": "off",
+                    "no-console": "off",
+                    "no-multi-assign": "off"
+                }
+            }
         ]
     },
     "prettier": {

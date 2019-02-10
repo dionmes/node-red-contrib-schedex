@@ -1,4 +1,3 @@
-/* eslint-disable max-lines,no-invalid-this,consistent-this,max-lines-per-function */
 /**
  * The MIT License (MIT)
  *
@@ -22,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-'use strict';
 module.exports = function(RED) {
     const moment = require('moment');
     const SunCalc = require('suncalc');
@@ -38,9 +36,13 @@ module.exports = function(RED) {
 
     RED.nodes.registerType('schedex', function(config) {
         RED.nodes.createNode(this, config);
-        const node = this,
-            events = {};
+        const node = this;
+        const events = {};
 
+        /**
+         * @param {object} event
+         * @returns
+         */
         function inverse(event) {
             return event === events.on ? events.off : events.on;
         }
@@ -65,85 +67,94 @@ module.exports = function(RED) {
         // Assume the node is off initially
         let lastEvent = events.off;
 
-        node.on('input', function(msg) {
-            let handled = false,
-                requiresBootstrap = false;
-            if (_.isString(msg.payload)) {
-                // TODO - with these payload options, we can't support on and ontime etc.
-                if (msg.payload === 'on') {
-                    handled = true;
-                    send(events.on, true);
-                } else if (msg.payload === 'off') {
-                    handled = true;
-                    send(events.off, true);
-                } else if (msg.payload === 'toggle') {
-                    handled = true;
-                    send(inverse(lastEvent), true);
-                } else if (msg.payload === 'info') {
-                    handled = true;
-                    const payload = _.clone(config);
-                    payload.on = isSuspended()
-                        ? 'suspended'
-                        : events.on.moment.toDate().toUTCString();
-                    payload.off = isSuspended()
-                        ? 'suspended'
-                        : events.off.moment.toDate().toUTCString();
-                    payload.state = isSuspended()
-                        ? 'suspended'
-                        : events.off.moment.isAfter(events.on.moment)
-                            ? 'off'
-                            : 'on';
-                    node.send({ topic: 'info', payload });
-                } else {
-                    enumerateProgrammables(function(cfg, prop, typeConverter) {
-                        const match = new RegExp(`.*${prop}\\s+(\\S+)`, 'u').exec(msg.payload);
-                        if (match) {
-                            handled = true;
-                            const previous = cfg[prop];
-                            cfg[prop] = typeConverter(match[1]);
-                            requiresBootstrap = requiresBootstrap || previous !== cfg[prop];
-                        }
-                    });
+        function getWeekdayConfig() {
+            return [
+                config.mon,
+                config.tue,
+                config.wed,
+                config.thu,
+                config.fri,
+                config.sat,
+                config.sun
+            ];
+        }
+
+        function isSuspended() {
+            return (
+                config.suspended ||
+                getWeekdayConfig().indexOf(true) === -1 ||
+                (!events.on.time && !events.off.time)
+            );
+        }
+
+        function setStatus(status, { event = null, manual = false, error = null } = {}) {
+            const message = [];
+            let shape = 'dot';
+            let fill = 'red';
+            if (status === Status.SCHEDULED) {
+                fill = 'yellow';
+                if (events.on.moment && events.off.moment) {
+                    const firstEvent = events.on.moment.isBefore(events.off.moment)
+                        ? events.on
+                        : events.off;
+                    message.push(firstEvent.name);
+                    message.push(firstEvent.moment.format(fmt));
+                    message.push(inverse(firstEvent).name);
+                    message.push(inverse(firstEvent).moment.format(fmt));
+                } else if (events.on.moment) {
+                    message.push(events.on.name);
+                    message.push(events.on.moment.format(fmt));
+                } else if (events.off.moment) {
+                    message.push(events.off.name);
+                    message.push(events.off.moment.format(fmt));
                 }
-            } else {
-                enumerateProgrammables(function(cfg, prop, typeConverter) {
-                    if (msg.payload.hasOwnProperty(prop)) {
-                        handled = true;
-                        const previous = cfg[prop];
-                        cfg[prop] = typeConverter(msg.payload[prop]);
-                        requiresBootstrap = requiresBootstrap || previous !== cfg[prop];
+            } else if (status === Status.FIRED) {
+                // eslint-disable-next-line prefer-destructuring
+                shape = event.shape;
+                fill = manual ? 'blue' : 'green';
+                message.push(event.name);
+                message.push(manual ? 'manual' : 'auto');
+                if (isSuspended()) {
+                    message.push('- scheduling suspended');
+                } else if (inverse(event).moment) {
+                    message.push(
+                        `until ${inverse(event).name} at ${inverse(event).moment.format(fmt)}`
+                    );
+                } else {
+                    const next = inverse(event).moment ? inverse(event) : event;
+                    if (next.moment) {
+                        message.push(`until ${next.name} at ${next.moment.format(fmt)}`);
                     }
-                });
+                }
+            } else if (status === Status.SUSPENDED) {
+                fill = 'grey';
+                message.push('Scheduling suspended');
+                if (getWeekdayConfig().indexOf(true) === -1) {
+                    message.push('(no weekdays selected)');
+                } else if (!events.on.time && !events.off.time) {
+                    message.push('(no on or off time)');
+                }
+                message.push('- manual mode only');
+            } else if (status === Status.ERROR) {
+                message.push(error);
             }
-            if (!handled) {
-                setStatus(Status.ERROR, { error: 'Unsupported input' });
-            } else if (requiresBootstrap) {
-                bootstrap();
-            }
-        });
 
-        node.on('close', suspend);
-
-        function setupEvent(eventName, shape) {
-            const filtered = _.pickBy(config, function(value, key) {
-                return key && key.indexOf(eventName) === 0;
-            });
-            const event = _.mapKeys(filtered, function(value, key) {
-                return key.substring(eventName.length).toLowerCase();
-            });
-            event.name = eventName.toUpperCase();
-            event.shape = shape;
-            event.callback = function() {
-                send(event);
-                schedule(event);
-            };
-            return event;
+            node.status({ fill, shape, text: message.join(' ') });
         }
 
         function send(event, manual) {
             lastEvent = event;
             node.send({ topic: event.topic, payload: event.payload });
             setStatus(Status.FIRED, { event, manual });
+        }
+
+        function teardownEvent(event) {
+            if (event) {
+                if (event.timeout) {
+                    clearTimeout(event.timeout);
+                }
+                event.moment = null;
+            }
         }
 
         function schedule(event, isInitial) {
@@ -196,13 +207,25 @@ module.exports = function(RED) {
             return true;
         }
 
-        function teardownEvent(event) {
-            if (event) {
-                if (event.timeout) {
-                    clearTimeout(event.timeout);
-                }
-                event.moment = null;
-            }
+        /**
+         * @param {string} eventName
+         * @param {string} shape
+         * @returns
+         */
+        function setupEvent(eventName, shape) {
+            const filtered = _.pickBy(config, function(value, key) {
+                return key && key.indexOf(eventName) === 0;
+            });
+            const event = _.mapKeys(filtered, function(value, key) {
+                return key.substring(eventName.length).toLowerCase();
+            });
+            event.name = eventName.toUpperCase();
+            event.shape = shape;
+            event.callback = function() {
+                send(event);
+                schedule(event);
+            };
+            return event;
         }
 
         function suspend() {
@@ -217,61 +240,6 @@ module.exports = function(RED) {
             }
         }
 
-        function setStatus(status, { event = null, manual = false, error = null } = {}) {
-            const message = [];
-            let shape = 'dot',
-                fill = 'red';
-            if (status === Status.SCHEDULED) {
-                fill = 'yellow';
-                if (events.on.moment && events.off.moment) {
-                    const firstEvent = events.on.moment.isBefore(events.off.moment)
-                        ? events.on
-                        : events.off;
-                    message.push(firstEvent.name);
-                    message.push(firstEvent.moment.format(fmt));
-                    message.push(inverse(firstEvent).name);
-                    message.push(inverse(firstEvent).moment.format(fmt));
-                } else if (events.on.moment) {
-                    message.push(events.on.name);
-                    message.push(events.on.moment.format(fmt));
-                } else if (events.off.moment) {
-                    message.push(events.off.name);
-                    message.push(events.off.moment.format(fmt));
-                }
-            } else if (status === Status.FIRED) {
-                // eslint-disable-next-line prefer-destructuring
-                shape = event.shape;
-                fill = manual ? 'blue' : 'green';
-                message.push(event.name);
-                message.push(manual ? 'manual' : 'auto');
-                if (isSuspended()) {
-                    message.push('- scheduling suspended');
-                } else if (inverse(event).moment) {
-                    message.push(
-                        `until ${inverse(event).name} at ${inverse(event).moment.format(fmt)}`
-                    );
-                } else {
-                    const next = inverse(event).moment ? inverse(event) : event;
-                    if (next.moment) {
-                        message.push(`until ${next.name} at ${next.moment.format(fmt)}`);
-                    }
-                }
-            } else if (status === Status.SUSPENDED) {
-                fill = 'grey';
-                message.push('Scheduling suspended');
-                if (getWeekdayConfig().indexOf(true) === -1) {
-                    message.push('(no weekdays selected)');
-                } else if (!events.on.time && !events.off.time) {
-                    message.push('(no on or off time)');
-                }
-                message.push('- manual mode only');
-            } else if (status === Status.ERROR) {
-                message.push(error);
-            }
-
-            node.status({ fill, shape, text: message.join(' ') });
-        }
-
         function bootstrap() {
             teardownEvent(events.on);
             teardownEvent(events.off);
@@ -284,12 +252,9 @@ module.exports = function(RED) {
             }
         }
 
-        function isSuspended() {
-            return (
-                config.suspended ||
-                getWeekdayConfig().indexOf(true) === -1 ||
-                (!events.on.time && !events.off.time)
-            );
+        function toBoolean(val) {
+            // eslint-disable-next-line prefer-template
+            return (val + '').toLowerCase() === 'true';
         }
 
         function enumerateProgrammables(callback) {
@@ -315,22 +280,64 @@ module.exports = function(RED) {
             callback(config, 'suspended', toBoolean);
         }
 
-        function toBoolean(val) {
-            // eslint-disable-next-line prefer-template
-            return (val + '').toLowerCase() === 'true';
-        }
+        node.on('input', function(msg) {
+            let requiresBootstrap = false;
+            let handled = false;
+            if (_.isString(msg.payload)) {
+                // TODO - with these payload options, we can't support on and ontime etc.
+                if (msg.payload === 'on') {
+                    handled = true;
+                    send(events.on, true);
+                } else if (msg.payload === 'off') {
+                    handled = true;
+                    send(events.off, true);
+                } else if (msg.payload === 'toggle') {
+                    handled = true;
+                    send(inverse(lastEvent), true);
+                } else if (msg.payload === 'info') {
+                    handled = true;
+                    const payload = _.clone(config);
+                    payload.on = isSuspended()
+                        ? 'suspended'
+                        : events.on.moment.toDate().toUTCString();
+                    payload.off = isSuspended()
+                        ? 'suspended'
+                        : events.off.moment.toDate().toUTCString();
+                    payload.state = isSuspended()
+                        ? 'suspended'
+                        : events.off.moment.isAfter(events.on.moment)
+                        ? 'off'
+                        : 'on';
+                    node.send({ topic: 'info', payload });
+                } else {
+                    enumerateProgrammables(function(cfg, prop, typeConverter) {
+                        const match = new RegExp(`.*${prop}\\s+(\\S+)`, 'u').exec(msg.payload);
+                        if (match) {
+                            handled = true;
+                            const previous = cfg[prop];
+                            cfg[prop] = typeConverter(match[1]);
+                            requiresBootstrap = requiresBootstrap || previous !== cfg[prop];
+                        }
+                    });
+                }
+            } else {
+                enumerateProgrammables(function(cfg, prop, typeConverter) {
+                    if (Object.prototype.hasOwnProperty.call(msg.payload, prop)) {
+                        handled = true;
+                        const previous = cfg[prop];
+                        cfg[prop] = typeConverter(msg.payload[prop]);
+                        requiresBootstrap = requiresBootstrap || previous !== cfg[prop];
+                    }
+                });
+            }
+            if (!handled) {
+                setStatus(Status.ERROR, { error: 'Unsupported input' });
+            } else if (requiresBootstrap) {
+                bootstrap();
+            }
+        });
 
-        function getWeekdayConfig() {
-            return [
-                config.mon,
-                config.tue,
-                config.wed,
-                config.thu,
-                config.fri,
-                config.sat,
-                config.sun
-            ];
-        }
+        node.on('close', suspend);
 
         // Bodges to allow testing
         node.schedexEvents = () => events;
