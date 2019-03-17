@@ -335,7 +335,6 @@ describe('schedex', function() {
                 suspended: false,
                 thu: true,
                 tue: true,
-                unittest: true,
                 wed: true
             },
             topic: 'info'
@@ -372,7 +371,6 @@ describe('schedex', function() {
                 suspended: true,
                 thu: true,
                 tue: true,
-                unittest: true,
                 wed: true
             },
             topic: 'info'
@@ -415,7 +413,6 @@ describe('schedex', function() {
                 suspended: false,
                 thu: true,
                 tue: true,
-                unittest: true,
                 wed: true
             },
             topic: 'info'
