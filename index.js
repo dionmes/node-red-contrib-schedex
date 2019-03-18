@@ -198,8 +198,6 @@ module.exports = function(RED) {
                 // Don't use existing 'now' moment here as hour and minute mutate the moment.
                 event.moment = node
                     .now()
-                    .second(0)
-                    .millisecond(0)
                     .hour(+matches[1])
                     .minute(+matches[2]);
             } else {
@@ -213,7 +211,7 @@ module.exports = function(RED) {
                 setStatus(Status.ERROR, { error: `Invalid time [${event.time}]` });
                 return false;
             }
-            event.moment.seconds(0);
+            event.moment.seconds(0).millisecond(0);
 
             if (event.offset) {
                 let adjustment = event.offset;
@@ -303,7 +301,6 @@ module.exports = function(RED) {
                 } else if (msg.payload === 'info' || msg.payload === 'info_local') {
                     handled = true;
                     const payload = _.pick(config, Object.keys(configuration));
-
                     if (isSuspended()) {
                         payload.state = 'suspended';
                         payload.on = 'suspended';
@@ -354,7 +351,10 @@ module.exports = function(RED) {
         // Bodges to allow testing
         node.schedexEvents = () => events;
         node.schedexConfig = () => config;
-        node.now = moment;
+        node.now = () =>
+            moment()
+                .second(0)
+                .millisecond(0);
 
         bootstrap();
     });

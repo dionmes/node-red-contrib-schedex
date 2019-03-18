@@ -568,7 +568,8 @@ describe('schedex', function() {
         const now = moment()
             .hour(23)
             .minute(46)
-            .seconds(0);
+            .second(0)
+            .millisecond(0);
         node.now = function() {
             return now.clone();
         };
