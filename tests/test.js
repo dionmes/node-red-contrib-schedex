@@ -283,9 +283,11 @@ describe('schedex', function() {
     it('should emit the correct info', function() {
         let ontime = moment()
             .seconds(0)
+            .millisecond(0)
             .add(1, 'minute');
         const offtime = moment()
             .seconds(0)
+            .millisecond(0)
             .add(2, 'minute');
 
         const config = {
@@ -402,6 +404,146 @@ describe('schedex', function() {
                 offtime: config.offtime,
                 offtopic: 'offtopic',
                 on: ontime.toDate().toUTCString(),
+                onoffset: '',
+                onpayload: 'onpayload',
+                onrandomoffset: 0,
+                ontime: ontime.format('HH:mm'),
+                ontopic: 'ontopic1',
+                sat: true,
+                state: 'on',
+                sun: true,
+                suspended: false,
+                thu: true,
+                tue: true,
+                wed: true
+            },
+            topic: 'info'
+        });
+    });
+    it('should emit the correct info_local', function() {
+        let ontime = moment()
+            .seconds(0)
+            .millisecond(0)
+            .add(1, 'minute');
+        const offtime = moment()
+            .seconds(0)
+            .millisecond(0)
+            .add(2, 'minute');
+
+        const config = {
+            ontime: ontime.format('HH:mm'),
+            offtime: offtime.format('HH:mm'),
+            onoffset: '',
+            offoffset: '',
+            onpayload: 'onpayload',
+            ontopic: 'ontopic',
+            offpayload: 'offpayload',
+            offtopic: 'offtopic',
+            mon: true,
+            tue: true,
+            wed: true,
+            thu: true,
+            fri: true,
+            sat: true,
+            sun: true
+        };
+        const node = newNode(config);
+
+        node.emit('input', {
+            payload: 'info_local'
+        });
+        const sent = node.sent(0);
+        assert.deepStrictEqual(sent, {
+            payload: {
+                fri: true,
+                lat: 51.33411,
+                lon: -0.83716,
+                mon: true,
+                off: offtime.toISOString(true),
+                offoffset: '',
+                offpayload: 'offpayload',
+                offrandomoffset: 1,
+                offtime: config.offtime,
+                offtopic: 'offtopic',
+                on: ontime.toISOString(true),
+                onoffset: '',
+                onpayload: 'onpayload',
+                onrandomoffset: 0,
+                ontime: config.ontime,
+                ontopic: 'ontopic',
+                sat: true,
+                state: 'off',
+                sun: true,
+                suspended: false,
+                thu: true,
+                tue: true,
+                wed: true
+            },
+            topic: 'info'
+        });
+
+        node.emit('input', {
+            payload: 'suspended true'
+        });
+
+        node.emit('input', {
+            payload: 'info_local'
+        });
+        assert.deepStrictEqual(node.sent(1), {
+            payload: {
+                fri: true,
+                lat: 51.33411,
+                lon: -0.83716,
+                mon: true,
+                off: 'suspended',
+                offoffset: '',
+                offpayload: 'offpayload',
+                offrandomoffset: 1,
+                offtime: config.offtime,
+                offtopic: 'offtopic',
+                on: 'suspended',
+                onoffset: '',
+                onpayload: 'onpayload',
+                onrandomoffset: 0,
+                ontime: config.ontime,
+                ontopic: 'ontopic',
+                sat: true,
+                state: 'suspended',
+                sun: true,
+                suspended: true,
+                thu: true,
+                tue: true,
+                wed: true
+            },
+            topic: 'info'
+        });
+
+        ontime = ontime.subtract(3, 'minute').add(1, 'day');
+        node.emit('input', {
+            payload: {
+                suspended: false,
+                ontime: ontime.format('HH:mm'),
+                ontopic: 'ontopic1',
+                offpayload: 'offpayload1'
+            }
+        });
+
+        node.emit('input', {
+            payload: 'info_local'
+        });
+        assert.deepStrictEqual(node.sent(2), {
+            payload: {
+                fri: true,
+                lat: 51.33411,
+                lon: -0.83716,
+                mon: true,
+                off: offtime.toISOString(true),
+                offoffset: '',
+                offpayload: 'offpayload1',
+                offrandomoffset: 1,
+                offtime: config.offtime,
+                offtopic: 'offtopic',
+                on: ontime.toISOString(true),
                 onoffset: '',
                 onpayload: 'onpayload',
                 onrandomoffset: 0,

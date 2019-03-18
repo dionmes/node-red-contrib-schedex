@@ -198,6 +198,8 @@ module.exports = function(RED) {
                 // Don't use existing 'now' moment here as hour and minute mutate the moment.
                 event.moment = node
                     .now()
+                    .second(0)
+                    .millisecond(0)
                     .hour(+matches[1])
                     .minute(+matches[2]);
             } else {
@@ -298,21 +300,26 @@ module.exports = function(RED) {
                 } else if (msg.payload === 'toggle') {
                     handled = true;
                     send(inverse(lastEvent), true);
-                } else if (msg.payload === 'info') {
+                } else if (msg.payload === 'info' || msg.payload === 'info_local') {
                     handled = true;
                     const payload = _.pick(config, Object.keys(configuration));
-                    payload.on = isSuspended()
-                        ? 'suspended'
-                        : events.on.moment.toDate().toUTCString();
-                    payload.off = isSuspended()
-                        ? 'suspended'
-                        : events.off.moment.toDate().toUTCString();
-                    // eslint-disable-next-line no-nested-ternary
-                    payload.state = isSuspended()
-                        ? 'suspended'
-                        : events.off.moment.isAfter(events.on.moment)
-                        ? 'off'
-                        : 'on';
+
+                    if (isSuspended()) {
+                        payload.state = 'suspended';
+                        payload.on = 'suspended';
+                        payload.off = 'suspended';
+                    } else {
+                        payload.state = events.off.moment.isAfter(events.on.moment)
+                            ? 'off'
+                            : 'on';
+                        if (msg.payload === 'info') {
+                            payload.on = events.on.moment.toDate().toUTCString();
+                            payload.off = events.off.moment.toDate().toUTCString();
+                        } else if (msg.payload === 'info_local') {
+                            payload.on = events.on.moment.toISOString(true);
+                            payload.off = events.off.moment.toISOString(true);
+                        }
+                    }
                     node.send({ topic: 'info', payload });
                 } else {
                     enumerateProgrammables(function(cfg, prop, typeConverter) {
