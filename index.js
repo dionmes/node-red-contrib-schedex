@@ -34,6 +34,34 @@ module.exports = function(RED) {
         ERROR: Symbol('error')
     });
 
+    function toBoolean(val) {
+        // eslint-disable-next-line prefer-template
+        return (val + '').toLowerCase() === 'true';
+    }
+
+    const configuration = Object.freeze({
+        ontime: String,
+        ontopic: String,
+        onpayload: String,
+        onoffset: Number,
+        onrandomoffset: toBoolean,
+        offtime: String,
+        offtopic: String,
+        offpayload: String,
+        offoffset: Number,
+        offrandomoffset: toBoolean,
+        mon: toBoolean,
+        tue: toBoolean,
+        wed: toBoolean,
+        thu: toBoolean,
+        fri: toBoolean,
+        sat: toBoolean,
+        sun: toBoolean,
+        lon: Number,
+        lat: Number,
+        suspended: toBoolean
+    });
+
     RED.nodes.registerType('schedex', function(config) {
         RED.nodes.createNode(this, config);
         const node = this;
@@ -252,32 +280,8 @@ module.exports = function(RED) {
             }
         }
 
-        function toBoolean(val) {
-            // eslint-disable-next-line prefer-template
-            return (val + '').toLowerCase() === 'true';
-        }
-
         function enumerateProgrammables(callback) {
-            callback(config, 'ontime', String);
-            callback(config, 'ontopic', String);
-            callback(config, 'onpayload', String);
-            callback(config, 'onoffset', Number);
-            callback(config, 'onrandomoffset', toBoolean);
-            callback(config, 'offtime', String);
-            callback(config, 'offtopic', String);
-            callback(config, 'offpayload', String);
-            callback(config, 'offoffset', Number);
-            callback(config, 'offrandomoffset', toBoolean);
-            callback(config, 'mon', toBoolean);
-            callback(config, 'tue', toBoolean);
-            callback(config, 'wed', toBoolean);
-            callback(config, 'thu', toBoolean);
-            callback(config, 'fri', toBoolean);
-            callback(config, 'sat', toBoolean);
-            callback(config, 'sun', toBoolean);
-            callback(config, 'lon', Number);
-            callback(config, 'lat', Number);
-            callback(config, 'suspended', toBoolean);
+            _.forIn(configuration, (typeFunc, name) => callback(config, name, typeFunc));
         }
 
         node.on('input', function(msg) {
@@ -296,13 +300,14 @@ module.exports = function(RED) {
                     send(inverse(lastEvent), true);
                 } else if (msg.payload === 'info') {
                     handled = true;
-                    const payload = _.clone(config);
+                    const payload = _.pick(config, Object.keys(configuration));
                     payload.on = isSuspended()
                         ? 'suspended'
                         : events.on.moment.toDate().toUTCString();
                     payload.off = isSuspended()
                         ? 'suspended'
                         : events.off.moment.toDate().toUTCString();
+                    // eslint-disable-next-line no-nested-ternary
                     payload.state = isSuspended()
                         ? 'suspended'
                         : events.off.moment.isAfter(events.on.moment)
