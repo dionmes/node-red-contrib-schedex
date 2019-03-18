@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-const assert = require('chai').assert;
+const { assert } = require('chai');
 const _ = require('lodash');
 const moment = require('moment');
 const mock = require('node-red-contrib-mock-node');
