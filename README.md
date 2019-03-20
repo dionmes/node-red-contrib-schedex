@@ -57,14 +57,13 @@ The times can be a 24 hour time or a [suncalc](https://github.com/mourner/suncal
 | `nauticalDawn`    | nautical dawn (morning nautical twilight starts)                         |
 | `dawn`            | dawn (morning nautical twilight ends, morning civil twilight starts)     |
 
-
 ## Offsets
 
 The on and off time can have an offset. This is specified in minutes:
 
-* -ve number brings the time forward. E.g. if the time is dusk and offset is -60, a message will be generated 60 minutes
-  before dusk.
-* +ve number delays the time by the specified number of minutes
+-   -ve number brings the time forward. E.g. if the time is dusk and offset is -60, a message will be generated 60 minutes
+    before dusk.
+-   +ve number delays the time by the specified number of minutes
 
 ## Randomisation of times
 
@@ -76,21 +75,22 @@ dusk.
 
 You can wire inject nodes to the input of this node and send the following in `msg.payload`.
 
-| msg.payload | Description                                                                                                                                                                                                                                                                         |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `on`        | Triggers manual on mode and causes Schedex to emit the configured on event. Manual mode is reset when the next on or off time is reached                                                                                                                                            |
-| `off`       | Triggers manual off mode and causes Schedex to emit the configured off event. Manual mode is reset when the next on or off time is reached                                                                                                                                          |
-| `toggle`    | Triggers either the manual on or manual off mode. If the last event was the on event, toggle will cause schedex to emit the off event and vice versa. State is not maintained over restarts and deploys. Schedex assumes off upon start so the first toggle will emit the on event. |
-| `info`      | Schedex emits an object containing the on and off times in UTC format. It also contains the state which is either on or off.                                                                                                                                                        |
+| msg.payload  | Description                                                                                                                                                                                                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `on`         | Triggers manual on mode and causes Schedex to emit the configured on event. Manual mode is reset when the next on or off time is reached                                                                                                                                            |
+| `off`        | Triggers manual off mode and causes Schedex to emit the configured off event. Manual mode is reset when the next on or off time is reached                                                                                                                                          |
+| `toggle`     | Triggers either the manual on or manual off mode. If the last event was the on event, toggle will cause schedex to emit the off event and vice versa. State is not maintained over restarts and deploys. Schedex assumes off upon start so the first toggle will emit the on event. |
+| `info`       | Schedex emits an object containing the on and off times in UTC format. It also contains the state which is either on or off along with the rest of this node's configuration.                                                                                                       |
+| `info_local` | Schedex emits an object containing the on and off times in local format. It also contains the state which is either on or off along with the rest of this node's configuration.                                                                                                     |
 
-'## Programmatic Control
+## Programmatic Control
 
 This node supports programmatic time control as well as configuration via the NodeRED UI.
 
 **It is very important to note that properties set programmatically in this manner are transient. They will not persist
 over a NodeRED restart or redeploy!**
 
-Note that both the property-based and string-based specifications are overrides that violate the usual behavior. 
+Note that both the property-based and string-based specifications are overrides that violate the usual behavior.
 See here for further discussion https://github.com/node-red/node-red/issues/399.
 
 You can set the following:
