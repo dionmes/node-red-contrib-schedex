@@ -31,6 +31,7 @@ const nodeRedModule = require('../index.js');
 
 function newNode(configOverrides) {
     const config = {
+        name: 'test-node',
         suspended: false,
         ontime: '11:45',
         ontopic: 'on topic',
@@ -94,6 +95,7 @@ function testInfoCommand(infoCommand, dateFormatter) {
     const sent = node.sent(0);
     assert.deepStrictEqual(sent, {
         payload: {
+            name: 'test-node',
             fri: true,
             lat: 51.33411,
             lon: -0.83716,
@@ -130,6 +132,7 @@ function testInfoCommand(infoCommand, dateFormatter) {
     });
     assert.deepStrictEqual(node.sent(1), {
         payload: {
+            name: 'test-node',
             fri: true,
             lat: 51.33411,
             lon: -0.83716,
@@ -172,6 +175,7 @@ function testInfoCommand(infoCommand, dateFormatter) {
     });
     assert.deepStrictEqual(node.sent(2), {
         payload: {
+            name: 'test-node',
             fri: true,
             lat: 51.33411,
             lon: -0.83716,

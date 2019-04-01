@@ -280,6 +280,7 @@ module.exports = function(RED) {
                 } else if (msg.payload === 'info' || msg.payload === 'info_local') {
                     handled = true;
                     const payload = _.pick(config, Object.keys(configuration));
+                    payload.name = config.name;
                     if (isSuspended()) {
                         payload.state = 'suspended';
                         payload.on = 'suspended';
