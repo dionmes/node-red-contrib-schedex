@@ -163,7 +163,7 @@ THE SOFTWARE.
 </script>
 
 <script type="text/x-red" data-help-name="schedex">
-    <!-- START -->
+        <!-- START -->
     <h1 id="schedex">Schedex</h1>
     <p>Scheduler for node-red which allows you to enter on/off times as 24hr clock (e.g. 01:10) or suncalc events (e.g.<br>goldenHour). It also allows you to offset times and randomise the time within the offset.</p>
     <p>Inspired by Pete Scargill&#39;s <a href="http://tech.scargill.net/big-timer/">BigTimer</a></p>
@@ -292,11 +292,11 @@ THE SOFTWARE.
     </tr>
     <tr>
     <td><code>info_local</code></td>
-    <td>Schedex emits an object containing the on and off times in local format. It also contains the state which is either on or off along with the rest of this node&#39;s configuration.</td>
+    <td>Schedex emits an object containing the on and off times in local ISO format. It also contains the state which is either on or off along with the rest of this node&#39;s configuration.</td>
     </tr>
     </tbody>
     </table>
-    <p>&#39;## Programmatic Control</p>
+    <h2 id="programmatic-control">Programmatic Control</h2>
     <p>This node supports programmatic time control as well as configuration via the NodeRED UI.</p>
     <p><strong>It is very important to note that properties set programmatically in this manner are transient. They will not persist<br>over a NodeRED restart or redeploy!</strong></p>
     <p>Note that both the property-based and string-based specifications are overrides that violate the usual behavior.<br>See here for further discussion <a href="https://github.com/node-red/node-red/issues/399">https://github.com/node-red/node-red/issues/399</a>.</p>
@@ -450,5 +450,5 @@ THE SOFTWARE.
     </tr>
     </tbody>
     </table>
-    <!-- END -->
+        <!-- END -->
 </script>
