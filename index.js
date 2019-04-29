@@ -34,6 +34,8 @@ module.exports = function(RED) {
         ERROR: Symbol('error')
     });
 
+    const weekdays = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+
     function toBoolean(val) {
         // eslint-disable-next-line prefer-template
         return (val + '').toLowerCase() === 'true';
@@ -66,45 +68,22 @@ module.exports = function(RED) {
         RED.nodes.createNode(this, config);
         const node = this;
         const events = {};
+        // Assume the node is off initially
+        let lastEvent = events.off;
 
-        /**
-         * @param {object} event
-         * @returns
-         */
+        // Make sure these two props are proper booleans.
+        config.onrandomoffset = !!config.onrandomoffset;
+        config.offrandomoffset = !!config.offrandomoffset;
+        // Any old versions upgraded will be undefined so convert them to boolean
+        // eslint-disable-next-line no-return-assign
+        weekdays.forEach(weekday => (config[weekday] = !!config[weekday]));
+
         function inverse(event) {
             return event === events.on ? events.off : events.on;
         }
 
-        // migration code : if new values are undefined, set all to true
-        if (
-            config.sun === undefined &&
-            config.mon === undefined &&
-            config.tue === undefined &&
-            config.wed === undefined &&
-            config.thu === undefined &&
-            config.fri === undefined &&
-            config.sat === undefined
-        ) {
-            const name = config.name || `${config.ontime} - ${config.offtime}`;
-            node.warn(
-                `Schedex [${name}]: New weekday configuration attributes are not defined, please edit the node. Defaulting to true.`
-            );
-            config.sun = config.mon = config.tue = config.wed = config.thu = config.fri = config.sat = true;
-        }
-
-        // Assume the node is off initially
-        let lastEvent = events.off;
-
         function getWeekdayConfig() {
-            return [
-                config.mon,
-                config.tue,
-                config.wed,
-                config.thu,
-                config.fri,
-                config.sat,
-                config.sun
-            ];
+            return weekdays.map(weekday => config[weekday]);
         }
 
         function isSuspended() {
@@ -211,7 +190,7 @@ module.exports = function(RED) {
                 setStatus(Status.ERROR, { error: `Invalid time [${event.time}]` });
                 return false;
             }
-            event.moment.seconds(0);
+            event.moment.seconds(0).millisecond(0);
 
             if (event.offset) {
                 let adjustment = event.offset;
@@ -226,8 +205,8 @@ module.exports = function(RED) {
             }
 
             // Adjust weekday if not selected
-            const weekdays = getWeekdayConfig();
-            while (!weekdays[event.moment.isoWeekday() - 1]) {
+            const weekdayConfig = getWeekdayConfig();
+            while (!weekdayConfig[event.moment.isoWeekday() - 1]) {
                 event.moment.add(1, 'day');
             }
             const delay = event.moment.diff(now);
@@ -298,21 +277,26 @@ module.exports = function(RED) {
                 } else if (msg.payload === 'toggle') {
                     handled = true;
                     send(inverse(lastEvent), true);
-                } else if (msg.payload === 'info') {
+                } else if (msg.payload === 'info' || msg.payload === 'info_local') {
                     handled = true;
                     const payload = _.pick(config, Object.keys(configuration));
-                    payload.on = isSuspended()
-                        ? 'suspended'
-                        : events.on.moment.toDate().toUTCString();
-                    payload.off = isSuspended()
-                        ? 'suspended'
-                        : events.off.moment.toDate().toUTCString();
-                    // eslint-disable-next-line no-nested-ternary
-                    payload.state = isSuspended()
-                        ? 'suspended'
-                        : events.off.moment.isAfter(events.on.moment)
-                        ? 'off'
-                        : 'on';
+                    payload.name = config.name;
+                    if (isSuspended()) {
+                        payload.state = 'suspended';
+                        payload.on = 'suspended';
+                        payload.off = 'suspended';
+                    } else {
+                        payload.state = events.off.moment.isAfter(events.on.moment)
+                            ? 'off'
+                            : 'on';
+                        if (msg.payload === 'info') {
+                            payload.on = events.on.moment.toDate().toUTCString();
+                            payload.off = events.off.moment.toDate().toUTCString();
+                        } else if (msg.payload === 'info_local') {
+                            payload.on = events.on.moment.toISOString(true);
+                            payload.off = events.off.moment.toISOString(true);
+                        }
+                    }
                     node.send({ topic: 'info', payload });
                 } else {
                     enumerateProgrammables(function(cfg, prop, typeConverter) {
@@ -347,7 +331,10 @@ module.exports = function(RED) {
         // Bodges to allow testing
         node.schedexEvents = () => events;
         node.schedexConfig = () => config;
-        node.now = moment;
+        node.now = () =>
+            moment()
+                .second(0)
+                .millisecond(0);
 
         bootstrap();
     });
