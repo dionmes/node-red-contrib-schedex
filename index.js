@@ -209,16 +209,8 @@ module.exports = function(RED) {
             while (!weekdayConfig[event.moment.isoWeekday() - 1]) {
                 event.moment.add(1, 'day');
             }
-            console.log(event.moment.toISOString());
-            console.log(now.toISOString());
             const delay = event.moment.diff(now);
-            console.log(delay);
             event.timeout = setTimeout(event.callback, delay);
-            console.log(
-                moment(now)
-                    .add(delay, 'milliseconds')
-                    .toISOString()
-            );
             return true;
         }
 
