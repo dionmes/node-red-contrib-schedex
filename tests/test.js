@@ -205,6 +205,14 @@ function testInfoCommand(infoCommand, dateFormatter) {
 }
 
 describe('schedex', function() {
+    it('issue#52 node.now should always have second and millisecond precision', function() {
+        const node = newNode();
+        const now = node.now();
+        // NOTE It's possible for this test to fail if you run it precisely on
+        // a second boundary. That's pretty unlikely though.
+        assert.notEqual(now.milliseconds(), 0);
+        assert.notEqual(now.seconds(), 0);
+    });
     it('should toggle state', function() {
         const node = newNode();
         node.emit('input', { payload: 'toggle' });
