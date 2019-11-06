@@ -145,8 +145,9 @@ module.exports = function(RED) {
             } else if (status === Status.ERROR) {
                 message.push(error);
             }
-
-            node.status({ fill, shape, text: message.join(' ') });
+            setTimeout(() => {
+                node.status({ fill, shape, text: message.join(' ') });
+            }, 1);
         }
 
         function send(event, manual) {
@@ -209,6 +210,7 @@ module.exports = function(RED) {
             while (!weekdayConfig[event.moment.isoWeekday() - 1]) {
                 event.moment.add(1, 'day');
             }
+
             const delay = event.moment.diff(now);
             event.timeout = setTimeout(event.callback, delay);
             return true;
@@ -235,9 +237,13 @@ module.exports = function(RED) {
             return event;
         }
 
-        function suspend() {
+        function teardownEvents() {
             teardownEvent(events.on);
             teardownEvent(events.off);
+        }
+
+        function suspend() {
+            teardownEvents();
             setStatus(Status.SUSPENDED);
         }
 
@@ -248,8 +254,7 @@ module.exports = function(RED) {
         }
 
         function bootstrap() {
-            teardownEvent(events.on);
-            teardownEvent(events.off);
+            teardownEvents();
             events.on = setupEvent('on', 'dot');
             events.off = setupEvent('off', 'ring');
             if (isSuspended()) {
@@ -326,7 +331,7 @@ module.exports = function(RED) {
             }
         });
 
-        node.on('close', suspend);
+        node.on('close', teardownEvents);
 
         // Bodges to allow testing
         node.schedexEvents = () => events;
