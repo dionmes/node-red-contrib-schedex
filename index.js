@@ -23,7 +23,7 @@
  */
 module.exports = function(RED) {
     const moment = require('moment');
-    const SunCalc = require('suncalc');
+    const SunCalc = require('suncalc2');
     const _ = require('lodash');
     const fmt = 'YYYY-MM-DD HH:mm';
 
@@ -224,6 +224,10 @@ module.exports = function(RED) {
             }
 
             const delay = event.moment.diff(now);
+            if (delay <= 0) {
+                setStatus(Status.ERROR, { error: `Negative delay` });
+                return false;
+            }
             event.timeout = setTimeout(event.callback, delay);
             return true;
         }
