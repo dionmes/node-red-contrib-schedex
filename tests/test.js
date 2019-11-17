@@ -205,6 +205,27 @@ function testInfoCommand(infoCommand, dateFormatter) {
 }
 
 describe('schedex', function() {
+    it('issue#56 suncalc falling over DST changes', function() {
+        const now = moment('2019-10-26 22:00:00.000');
+        const node = newNode({
+            ontime: 'sunset',
+            offtime: '21:00'
+        });
+        node.now = function() {
+            return now.clone();
+        };
+        // Trigger some events so the node recalculates the on time
+        node.emit('input', { payload: { suspended: true } });
+        node.emit('input', { payload: { suspended: false } });
+        // Expecting Sun Oct 27 2019 16:45:40 GMT+0000
+        // console.log(node.schedexEvents().on.moment.toString());
+        assert.ok(
+            node.schedexEvents().on.moment.isSame(moment('2019-10-27 16:48:53.000'), 'minute'),
+            `[${node
+                .schedexEvents()
+                .on.moment.toString()}] should equal [2019-10-27 16:48:53.000]`
+        );
+    });
     it('issue#52 node.now should always have second and millisecond precision', function() {
         const node = newNode();
         const now = node.now();

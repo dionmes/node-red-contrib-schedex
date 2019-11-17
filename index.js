@@ -173,14 +173,15 @@ module.exports = function(RED) {
 
             const now = node.now();
             const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
-            if (matches && matches.length) {
+            const isTime = matches && matches.length;
+            if (isTime) {
                 // Don't use existing 'now' moment here as hour and minute mutate the moment.
                 event.moment = node
                     .now()
                     .hour(+matches[1])
                     .minute(+matches[2]);
             } else {
-                const sunCalcTimes = SunCalc.getTimes(new Date(), config.lat, config.lon);
+                const sunCalcTimes = SunCalc.getTimes(now.toDate(), config.lat, config.lon);
                 const date = sunCalcTimes[event.time];
                 if (date) {
                     event.moment = moment(date);
@@ -209,6 +210,19 @@ module.exports = function(RED) {
             while (!weekdayConfig[event.moment.isoWeekday() - 1]) {
                 event.moment.add(1, 'day');
             }
+
+            if (!isTime) {
+                // #56 This is a suncalc time so we need to adjust based upon the actual
+                // date when it triggers as things like sunset move on a daily basis
+                // and we may fall over DST changes.
+                const sunCalcTimes = SunCalc.getTimes(
+                    event.moment.toDate(),
+                    config.lat,
+                    config.lon
+                );
+                event.moment = moment(sunCalcTimes[event.time]);
+            }
+
             const delay = event.moment.diff(now);
             event.timeout = setTimeout(event.callback, delay);
             return true;
