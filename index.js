@@ -164,6 +164,17 @@ module.exports = function(RED) {
             }
         }
 
+        function applyOffset(event) {
+            event.moment.seconds(0).millisecond(0);
+            if (event.offset) {
+                let adjustment = event.offset;
+                if (event.randomoffset) {
+                    adjustment = event.offset * Math.random();
+                }
+                event.moment.add(adjustment, 'minutes');
+            }
+        }
+
         function schedule(event, isInitial) {
             teardownEvent(event);
 
@@ -191,15 +202,8 @@ module.exports = function(RED) {
                 setStatus(Status.ERROR, { error: `Invalid time [${event.time}]` });
                 return false;
             }
-            event.moment.seconds(0).millisecond(0);
 
-            if (event.offset) {
-                let adjustment = event.offset;
-                if (event.randomoffset) {
-                    adjustment = event.offset * Math.random();
-                }
-                event.moment.add(adjustment, 'minutes');
-            }
+            applyOffset(event);
 
             if (!isInitial || (isInitial && now.isAfter(event.moment))) {
                 event.moment.add(1, 'day');
@@ -211,17 +215,18 @@ module.exports = function(RED) {
                 event.moment.add(1, 'day');
             }
 
-            // if (!isTime) {
-            //     // #56 This is a suncalc time so we need to adjust based upon the actual
-            //     // date when it triggers as things like sunset move on a daily basis
-            //     // and we may fall over DST changes.
-            //     const sunCalcTimes = SunCalc.getTimes(
-            //         event.moment.toDate(),
-            //         config.lat,
-            //         config.lon
-            //     );
-            //     event.moment = moment(sunCalcTimes[event.time]);
-            // }
+            if (!isTime) {
+                // #56 This is a suncalc time so we need to adjust based upon the actual
+                // date when it triggers as things like sunset move on a daily basis
+                // and we may fall over DST changes.
+                const sunCalcTimes = SunCalc.getTimes(
+                    event.moment.toDate(),
+                    config.lat,
+                    config.lon
+                );
+                event.moment = moment(sunCalcTimes[event.time]);
+                applyOffset(event);
+            }
 
             const delay = event.moment.diff(now);
             if (delay <= 0) {
