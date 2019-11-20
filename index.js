@@ -211,17 +211,17 @@ module.exports = function(RED) {
                 event.moment.add(1, 'day');
             }
 
-            if (!isTime) {
-                // #56 This is a suncalc time so we need to adjust based upon the actual
-                // date when it triggers as things like sunset move on a daily basis
-                // and we may fall over DST changes.
-                const sunCalcTimes = SunCalc.getTimes(
-                    event.moment.toDate(),
-                    config.lat,
-                    config.lon
-                );
-                event.moment = moment(sunCalcTimes[event.time]);
-            }
+            // if (!isTime) {
+            //     // #56 This is a suncalc time so we need to adjust based upon the actual
+            //     // date when it triggers as things like sunset move on a daily basis
+            //     // and we may fall over DST changes.
+            //     const sunCalcTimes = SunCalc.getTimes(
+            //         event.moment.toDate(),
+            //         config.lat,
+            //         config.lon
+            //     );
+            //     event.moment = moment(sunCalcTimes[event.time]);
+            // }
 
             const delay = event.moment.diff(now);
             if (delay <= 0) {
