@@ -181,7 +181,8 @@ module.exports = function(RED) {
             }
 
             let valid = false;
-            while (!valid) {
+            let attempt = 1;
+            while (!valid && attempt <= 7) {
                 const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
                 if (matches && matches.length) {
                     event.moment = event.moment.hour(+matches[1]).minute(+matches[2]);
@@ -212,9 +213,13 @@ module.exports = function(RED) {
                     weekdayConfig[event.moment.isoWeekday() - 1] && event.moment.isAfter(now);
                 if (!valid) {
                     event.moment.add(1, 'day');
+                    attempt++;
                 }
             }
-
+            if (!valid) {
+                setStatus(Status.ERROR, { error: `Failed to find valid time [${event.time}]` });
+                return false;
+            }
             const delay = event.moment.diff(now);
             if (delay <= 0) {
                 setStatus(Status.ERROR, { error: `Negative delay` });
