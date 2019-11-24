@@ -52,7 +52,8 @@ function newNode(configOverrides) {
         thu: true,
         fri: true,
         sat: true,
-        sun: true
+        sun: true,
+        passthrough: false
     };
     if (configOverrides) {
         _.assign(config, configOverrides);
@@ -85,7 +86,8 @@ function testInfoCommand(infoCommand, dateFormatter) {
         thu: true,
         fri: true,
         sat: true,
-        sun: true
+        sun: true,
+        passthrough: false
     };
     const node = newNode(config);
 
@@ -112,6 +114,7 @@ function testInfoCommand(infoCommand, dateFormatter) {
             onrandomoffset: false,
             ontime: config.ontime,
             ontopic: 'ontopic',
+            passthrough: false,
             sat: true,
             state: 'off',
             sun: true,
@@ -149,6 +152,7 @@ function testInfoCommand(infoCommand, dateFormatter) {
             onrandomoffset: false,
             ontime: config.ontime,
             ontopic: 'ontopic',
+            passthrough: false,
             sat: true,
             state: 'suspended',
             sun: true,
@@ -192,6 +196,7 @@ function testInfoCommand(infoCommand, dateFormatter) {
             onrandomoffset: false,
             ontime: ontime.format('HH:mm'),
             ontopic: 'ontopic1',
+            passthrough: false,
             sat: true,
             state: 'on',
             sun: true,
@@ -205,6 +210,21 @@ function testInfoCommand(infoCommand, dateFormatter) {
 }
 
 describe('schedex', function() {
+    it('issue#37 should pass through the message object', function() {
+        // Start with passthrough disabled, we should get nothing sent
+        const node = newNode({ passthrough: false });
+        node.emit('input', { payload: 'wibble' });
+        assert.strictEqual(node.sent().length, 0);
+
+        // Now enable passthrough and we should get our input message emitted
+        node.emit('input', { payload: { passthrough: true } });
+        node.emit('input', { payload: 'wibble' });
+        assert.strictEqual(node.sent(0).payload, 'wibble');
+
+        node.emit('input', { payload: 'on' });
+        assert.strictEqual(node.sent(1).topic, 'on topic');
+        assert.strictEqual(node.sent(1).payload, 'on payload');
+    });
     it('issue#56 suncalc falling over DST changes', function() {
         const now = moment('2019-10-26 22:00:00.000');
         const node = newNode({
