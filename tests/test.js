@@ -43,8 +43,8 @@ function newNode(configOverrides) {
         offpayload: 'off payload',
         offoffset: '5',
         offrandomoffset: 1,
-        lat: 51.33411,
-        lon: -0.83716,
+        lat: 51.5050793,
+        lon: -0.1225863,
         unittest: true,
         mon: true,
         tue: true,
@@ -97,8 +97,8 @@ function testInfoCommand(infoCommand, dateFormatter) {
         payload: {
             name: 'test-node',
             fri: true,
-            lat: 51.33411,
-            lon: -0.83716,
+            lat: 51.5050793,
+            lon: -0.1225863,
             mon: true,
             off: dateFormatter(offtime),
             offoffset: '',
@@ -134,8 +134,8 @@ function testInfoCommand(infoCommand, dateFormatter) {
         payload: {
             name: 'test-node',
             fri: true,
-            lat: 51.33411,
-            lon: -0.83716,
+            lat: 51.5050793,
+            lon: -0.1225863,
             mon: true,
             off: 'suspended',
             offoffset: '',
@@ -177,8 +177,8 @@ function testInfoCommand(infoCommand, dateFormatter) {
         payload: {
             name: 'test-node',
             fri: true,
-            lat: 51.33411,
-            lon: -0.83716,
+            lat: 51.5050793,
+            lon: -0.1225863,
             mon: true,
             off: dateFormatter(offtime),
             offoffset: '',
@@ -220,10 +220,30 @@ describe('schedex', function() {
         // Expecting Sun Oct 27 2019 16:45:40 GMT+0000
         // console.log(node.schedexEvents().on.moment.toString());
         assert.ok(
-            node.schedexEvents().on.moment.isSame(moment('2019-10-27 16:48:53.000'), 'minute'),
+            node.schedexEvents().on.moment.isSame(moment('2019-10-27 16:45:00.000'), 'minute'),
             `[${node
                 .schedexEvents()
-                .on.moment.toString()}] should equal [2019-10-27 16:48:53.000]`
+                .on.moment.toISOString()}] should equal [2019-10-27T16:45:00.000]`
+        );
+    });
+    it('issue#56 suncalc with offset', function() {
+        const node = newNode({
+            ontime: 'sunset',
+            onoffset: '30',
+            offtime: ''
+        });
+        const now = moment('2019-10-26 02:00:00.000');
+        node.now = function() {
+            return now.clone();
+        };
+        // Trigger some events so the node recalculates the on time
+        node.emit('input', { payload: { suspended: true } });
+        node.emit('input', { payload: { suspended: false } });
+        assert.ok(
+            node.schedexEvents().on.moment.isSame(moment('2019-10-26 18:17:00.000'), 'minute'),
+            `[${node
+                .schedexEvents()
+                .on.moment.toISOString()}] should equal [2019-10-26T18:17:00.000] (30 minutes after sunset)`
         );
     });
     it('issue#52 node.now should always have second and millisecond precision', function() {

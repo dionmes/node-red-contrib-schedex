@@ -164,7 +164,7 @@ module.exports = function(RED) {
             }
         }
 
-        function schedule(event, isInitial) {
+        function schedule(event, firedNow) {
             teardownEvent(event);
 
             if (!event.time) {
@@ -172,57 +172,54 @@ module.exports = function(RED) {
             }
 
             const now = node.now();
-            const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
-            const isTime = matches && matches.length;
-            if (isTime) {
-                // Don't use existing 'now' moment here as hour and minute mutate the moment.
-                event.moment = node
-                    .now()
-                    .hour(+matches[1])
-                    .minute(+matches[2]);
-            } else {
-                const sunCalcTimes = SunCalc.getTimes(now.toDate(), config.lat, config.lon);
-                const date = sunCalcTimes[event.time];
-                if (date) {
+            const weekdayConfig = getWeekdayConfig();
+
+            event.moment = node.now();
+            if (firedNow) {
+                // We've already fired today so start by examining tomorrow
+                event.moment.add(1, 'day');
+            }
+
+            let valid = false;
+            let attempt = 1;
+            while (!valid && attempt <= 7) {
+                const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
+                if (matches && matches.length) {
+                    event.moment = event.moment.hour(+matches[1]).minute(+matches[2]);
+                } else {
+                    const sunCalcTimes = SunCalc.getTimes(
+                        event.moment.toDate(),
+                        config.lat,
+                        config.lon
+                    );
+                    const date = sunCalcTimes[event.time];
+                    if (!date) {
+                        setStatus(Status.ERROR, { error: `Invalid time [${event.time}]` });
+                        return false;
+                    }
                     event.moment = moment(date);
                 }
+
+                event.moment.seconds(0).millisecond(0);
+                if (event.offset) {
+                    let adjustment = event.offset;
+                    if (event.randomoffset) {
+                        adjustment = event.offset * Math.random();
+                    }
+                    event.moment.add(adjustment, 'minutes');
+                }
+
+                valid =
+                    weekdayConfig[event.moment.isoWeekday() - 1] && event.moment.isAfter(now);
+                if (!valid) {
+                    event.moment.add(1, 'day');
+                    attempt++;
+                }
             }
-            if (!event.moment) {
-                setStatus(Status.ERROR, { error: `Invalid time [${event.time}]` });
+            if (!valid) {
+                setStatus(Status.ERROR, { error: `Failed to find valid time [${event.time}]` });
                 return false;
             }
-            event.moment.seconds(0).millisecond(0);
-
-            if (event.offset) {
-                let adjustment = event.offset;
-                if (event.randomoffset) {
-                    adjustment = event.offset * Math.random();
-                }
-                event.moment.add(adjustment, 'minutes');
-            }
-
-            if (!isInitial || (isInitial && now.isAfter(event.moment))) {
-                event.moment.add(1, 'day');
-            }
-
-            // Adjust weekday if not selected
-            const weekdayConfig = getWeekdayConfig();
-            while (!weekdayConfig[event.moment.isoWeekday() - 1]) {
-                event.moment.add(1, 'day');
-            }
-
-            // if (!isTime) {
-            //     // #56 This is a suncalc time so we need to adjust based upon the actual
-            //     // date when it triggers as things like sunset move on a daily basis
-            //     // and we may fall over DST changes.
-            //     const sunCalcTimes = SunCalc.getTimes(
-            //         event.moment.toDate(),
-            //         config.lat,
-            //         config.lon
-            //     );
-            //     event.moment = moment(sunCalcTimes[event.time]);
-            // }
-
             const delay = event.moment.diff(now);
             if (delay <= 0) {
                 setStatus(Status.ERROR, { error: `Negative delay` });
@@ -248,7 +245,7 @@ module.exports = function(RED) {
             event.shape = shape;
             event.callback = function() {
                 send(event);
-                schedule(event);
+                schedule(event, true);
             };
             return event;
         }
@@ -260,7 +257,7 @@ module.exports = function(RED) {
         }
 
         function resume() {
-            if (schedule(events.on, true) && schedule(events.off, true)) {
+            if (schedule(events.on, false) && schedule(events.off, false)) {
                 setStatus(Status.SCHEDULED);
             }
         }
