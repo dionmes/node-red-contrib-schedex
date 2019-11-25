@@ -245,7 +245,7 @@ THE SOFTWARE.
     </div>
     <hr />
     <div class="form-row">
-        <label for="node-input-passthrough"
+        <label for="node-input-passthrough" title="If enabled, input messages that are not handled by Schedex are sent to the output."
             ><i class="icon-tag" style="width: 16px"></i> Passthrough</label
         >
         <input
@@ -258,7 +258,7 @@ THE SOFTWARE.
 </script>
 
 <script type="text/x-red" data-help-name="schedex">
-        <!-- START -->
+            <!-- START -->
     <h1 id="schedex">Schedex</h1>
     <p>Scheduler for node-red which allows you to enter on/off times as 24hr clock (e.g. 01:10) or suncalc events (e.g.<br>goldenHour). It also allows you to offset times and randomise the time within the offset.</p>
     <p>Inspired by Pete Scargill&#39;s <a href="http://tech.scargill.net/big-timer/">BigTimer</a></p>
@@ -545,5 +545,8 @@ THE SOFTWARE.
     </tr>
     </tbody>
     </table>
-        <!-- END -->
+    <h2 id="message-passthrough">Message passthrough</h2>
+    <p>When <code>passthrough</code> is enabled, any message that isn&#39;t explicitly handled by Schedex will be immediately emitted.<br>To clarify, if the input payload does not match any one of the programmatic options above, along with<br>the on|off|toggle|info|info_local commands, the message will be sent to output.</p>
+    <p>With <code>passthough</code>disabled (the default), any message that isn&#39;t handled by Schedex will be dropped and an error reported.</p>
+            <!-- END -->
 </script>

@@ -134,3 +134,11 @@ Alternatively, you can send msg.payload as a string with the following values:
 | `mon false`                                    | Disables the schedule on a Monday                           |
 | `tue true`                                     | Enables the schedule on a Tuesday                           |
 | `ontime 16:30 onoffset 60 onrandomoffset true` | Sets the time, offset and random offset for the on event    |
+
+## Message passthrough
+
+When `passthrough` is enabled, any message that isn't explicitly handled by Schedex will be immediately emitted.
+To clarify, if the input payload does not match any one of the programmatic options above, along with
+the on|off|toggle|info|info_local commands, the message will be sent to output.
+
+With `passthough`disabled (the default), any message that isn't handled by Schedex will be dropped and an error reported.
