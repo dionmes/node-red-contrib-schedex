@@ -137,8 +137,8 @@ Alternatively, you can send msg.payload as a string with the following values:
 
 ## Message passthrough
 
-When `passthrough` is enabled, any message that isn't explicitly handled by Schedex will be immediately emitted.
+When `passthrough unhandled` is enabled, any message that isn't explicitly handled by Schedex will be immediately emitted.
 To clarify, if the input payload does not match any one of the programmatic options above, along with
 the on|off|toggle|info|info_local commands, the message will be sent to output.
 
-With `passthough`disabled (the default), any message that isn't handled by Schedex will be dropped and an error reported.
+With `passthough unhandled`disabled (the default), any message that isn't handled by Schedex will be dropped and an error reported.
