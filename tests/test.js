@@ -205,6 +205,37 @@ function testInfoCommand(infoCommand, dateFormatter) {
 }
 
 describe('schedex', function() {
+    it('issue#64 ability to schedule once a week', function() {
+        const now = moment('2019-12-13 11:00:00.000');
+        const node = newNode({
+            ontime: '10:00',
+            offtime: '13:00',
+            sat: false,
+            sun: false,
+            mon: false,
+            tue: false,
+            wed: false,
+            thu: false,
+            fri: true,
+            offoffset: '',
+            offrandomoffset: false
+        });
+        node.now = function() {
+            return now.clone();
+        };
+        // Trigger some events so the node recalculates the on time
+        node.emit('input', { payload: { suspended: true } });
+        node.emit('input', { payload: { suspended: false } });
+        assert.strictEqual(node.status().text.indexOf('Failed to find valid time'), -1);
+        assert.strictEqual(
+            node.schedexEvents().on.moment.toISOString(),
+            '2019-12-20T10:00:00.000Z'
+        );
+        assert.strictEqual(
+            node.schedexEvents().off.moment.toISOString(),
+            '2019-12-13T13:00:00.000Z'
+        );
+    });
     it('issue#56 suncalc falling over DST changes', function() {
         const now = moment('2019-10-26 22:00:00.000');
         const node = newNode({

@@ -181,8 +181,9 @@ module.exports = function(RED) {
             }
 
             let valid = false;
-            let attempt = 1;
-            while (!valid && attempt <= 7) {
+            let day = 0;
+            // Today is day 0 and we try seven days into the future
+            while (!valid && day <= 7) {
                 const matches = new RegExp('(\\d+):(\\d+)', 'u').exec(event.time);
                 if (matches && matches.length) {
                     event.moment = event.moment.hour(+matches[1]).minute(+matches[2]);
@@ -213,7 +214,7 @@ module.exports = function(RED) {
                     weekdayConfig[event.moment.isoWeekday() - 1] && event.moment.isAfter(now);
                 if (!valid) {
                     event.moment.add(1, 'day');
-                    attempt++;
+                    day++;
                 }
             }
             if (!valid) {
